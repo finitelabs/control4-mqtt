@@ -1,0 +1,40 @@
+Main "driver.lua"
+
+#ifdef DRIVERCENTRAL
+Module "vendor.cloud-client-byte" "../../../../src/vendor/cloud-client-byte.lua"
+#endif
+Module "vendor.deferred" "../../../../src/vendor/deferred.lua"
+Module "vendor.drivers-common-public.global.handlers" "../../../../src/vendor/drivers-common-public/global/handlers.lua"
+Module "vendor.drivers-common-public.global.lib" "../../../../src/vendor/drivers-common-public/global/lib.lua"
+Module "vendor.drivers-common-public.global.timer" "../../../../src/vendor/drivers-common-public/global/timer.lua"
+Module "vendor.drivers-common-public.global.url" "../../../../src/vendor/drivers-common-public/global/url.lua"
+Module "vendor.JSON" "../../../../src/vendor/JSON.lua"
+Module "vendor.version" "../../../../src/vendor/version.lua"
+Module "vendor.xml.xml2lua" "../../../../src/vendor/xml/xml2lua.lua"
+Module "vendor.xml.xmlhandler.dom" "../../../../src/vendor/xml/xmlhandler/dom.lua"
+Module "vendor.xml.xmlhandler.print" "../../../../src/vendor/xml/xmlhandler/print.lua"
+Module "vendor.xml.xmlhandler.tree" "../../../../src/vendor/xml/xmlhandler/tree.lua"
+Module "vendor.xml.XmlParser" "../../../../src/vendor/xml/XmlParser.lua"
+
+Module "constants" "../../../../src/constants.lua"
+
+Module "lib.bindings" "../../../../src/lib/bindings.lua"
+Module "lib.events" "../../../../src/lib/events.lua"
+#ifndef DRIVERCENTRAL
+Module "lib.github-updater" "../../../../src/lib/github-updater.lua"
+#endif
+Module "lib.http" "../../../../src/lib/http.lua"
+Module "lib.logging" "../../../../src/lib/logging.lua"
+Module "lib.persist" "../../../../src/lib/persist.lua"
+Module "lib.utils" "../../../../src/lib/utils.lua"
+Module "lib.values" "../../../../src/lib/values.lua"
+
+#ifdef DRIVERCENTRAL
+Output "../../../../dist/drivercentral/mqtt_broker.lua"
+#else
+Output "../../../../dist/oss/mqtt_broker.lua"
+#endif
+Option "minify" "true"
+Option "minify_level" "none"
+Option "minify_comments" "true"
+Option "minify_emptylines" "true"

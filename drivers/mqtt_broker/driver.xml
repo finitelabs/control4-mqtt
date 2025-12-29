@@ -1,0 +1,169 @@
+<devicedata>
+  <name>MQTT Broker</name>
+  <version/>
+  <manufacturer>Finite Labs</manufacturer>
+  <model>MQTT Broker</model>
+  <creator>Derek Miller</creator>
+  <small image_source="c4z">icons/device_sm.png</small>
+  <large image_source="c4z">icons/device_lg.png</large>
+  <control>lua_gen</control>
+  <controlmethod>ip</controlmethod>
+  <driver>DriverWorks</driver>
+  <copyright>Copyright 2025 Finite Labs, LLC. All rights reserved.</copyright>
+  <created>06/06/2025 12:00:00 PM</created>
+  <modified/>
+  <combo>true</combo>
+  <minimum_os_version>3.3.0</minimum_os_version>
+  <composer_categories>
+    <category>Utility</category>
+  </composer_categories>
+  <config>
+    <script file="driver.lua" jit="1"/>
+    <documentation file="www/documentation/index.html"/>
+    <properties>
+      <property>
+        <name>Cloud</name>
+        <type>LABEL</type>
+        <default>Cloud Settings</default>
+      </property>
+      <!-- #ifdef DRIVERCENTRAL -->
+      <property>
+        <name>Cloud Status</name>
+        <default/>
+        <type>STRING</type>
+        <readonly>true</readonly>
+      </property>
+      <!-- #endif -->
+      <property>
+        <name>Automatic Updates</name>
+        <type>LIST</type>
+        <items>
+          <item>Off</item>
+          <item>On</item>
+        </items>
+        <default>On</default>
+      </property>
+      <!-- #ifndef DRIVERCENTRAL -->
+      <property>
+        <name>Update Channel</name>
+        <type>LIST</type>
+        <default>Production</default>
+        <items>
+          <item>Production</item>
+          <item>Prerelease</item>
+        </items>
+      </property>
+      <!-- #endif -->
+      <property>
+        <name>Driver</name>
+        <type>LABEL</type>
+        <default>Driver Settings</default>
+      </property>
+      <property>
+        <name>Driver Status</name>
+        <type>STRING</type>
+        <default/>
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Driver Version</name>
+        <type>STRING</type>
+        <default/>
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Log Level</name>
+        <type>LIST</type>
+        <default>3 - Info</default>
+        <items>
+          <item>0 - Fatal</item>
+          <item>1 - Error</item>
+          <item>2 - Warning</item>
+          <item>3 - Info</item>
+          <item>4 - Debug</item>
+          <item>5 - Trace</item>
+          <item>6 - Ultra</item>
+        </items>
+      </property>
+      <property>
+        <name>Log Mode</name>
+        <type>LIST</type>
+        <default>Off</default>
+        <items>
+          <item>Off</item>
+          <item>Print</item>
+          <item>Log</item>
+          <item>Print and Log</item>
+        </items>
+      </property>
+      <property>
+        <name>Broker Settings</name>
+        <type>LABEL</type>
+        <default>Broker Settings</default>
+      </property>
+      <property>
+        <name>Broker Address</name>
+        <type>STRING</type>
+        <default/>
+        <description>IP address or hostname of the MQTT broker</description>
+      </property>
+      <property>
+        <name>Port</name>
+        <type>RANGED_INTEGER</type>
+        <minimum>1</minimum>
+        <maximum>65535</maximum>
+        <default>1883</default>
+      </property>
+      <property>
+        <name>Username</name>
+        <type>STRING</type>
+        <default/>
+        <description>MQTT broker username (optional)</description>
+      </property>
+      <property>
+        <name>Password</name>
+        <type>STRING</type>
+        <default/>
+        <password>true</password>
+      </property>
+      <property>
+        <name>Keep Alive</name>
+        <type>RANGED_INTEGER</type>
+        <minimum>10</minimum>
+        <maximum>3600</maximum>
+        <default>60</default>
+        <description>Keep-alive interval in seconds</description>
+      </property>
+    </properties>
+    <actions>
+      <!-- #ifndef DRIVERCENTRAL -->
+      <action>
+        <name>Update Drivers</name>
+        <command>UpdateDrivers</command>
+      </action>
+      <!-- #endif -->
+      <action>
+        <name>Reconnect</name>
+        <command>Reconnect</command>
+      </action>
+    </actions>
+  </config>
+  <connections>
+    <connection>
+      <id>5001</id>
+      <facing>6</facing>
+      <connectionname>MQTT Broker</connectionname>
+      <type>2</type>
+      <consumer>False</consumer>
+      <audiosource>False</audiosource>
+      <videosource>False</videosource>
+      <linelevel>False</linelevel>
+      <classes>
+        <class>
+          <classname>MQTT_BROKER</classname>
+        </class>
+      </classes>
+      <hidden>False</hidden>
+    </connection>
+  </connections>
+</devicedata>

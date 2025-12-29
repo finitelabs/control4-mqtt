@@ -1,0 +1,240 @@
+<devicedata>
+  <name>MQTT Switch</name>
+  <version/>
+  <manufacturer>Finite Labs</manufacturer>
+  <model>MQTT Switch</model>
+  <creator>Derek Miller</creator>
+  <small image_source="c4z">icons/device_sm.png</small>
+  <large image_source="c4z">icons/device_lg.png</large>
+  <control>lua_gen</control>
+  <driver>DriverWorks</driver>
+  <copyright>Copyright 2025 Finite Labs, LLC. All rights reserved.</copyright>
+  <created>06/06/2025 12:00:00 PM</created>
+  <modified/>
+  <combo>true</combo>
+  <minimum_os_version>3.3.0</minimum_os_version>
+  <composer_categories>
+    <category>Motorization</category>
+  </composer_categories>
+  <conditionals/>
+  <events/>
+  <config>
+    <script file="driver.lua" jit="1"/>
+    <documentation file="www/documentation/index.html"/>
+    <properties>
+      <!-- #ifdef DRIVERCENTRAL -->
+      <property>
+        <name>Cloud Settings</name>
+        <type>LABEL</type>
+        <default>Cloud Settings</default>
+      </property>
+      <property>
+        <name>Cloud Status</name>
+        <default/>
+        <type>STRING</type>
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Automatic Updates</name>
+        <type>LIST</type>
+        <items>
+          <item>Off</item>
+          <item>On</item>
+        </items>
+        <default>On</default>
+      </property>
+      <!-- #endif -->
+      <property>
+        <name>Driver Settings</name>
+        <type>LABEL</type>
+        <default>Driver Settings</default>
+      </property>
+      <property>
+        <name>Driver Status</name>
+        <type>STRING</type>
+        <default/>
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Driver Version</name>
+        <type>STRING</type>
+        <default/>
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Log Level</name>
+        <type>LIST</type>
+        <default>3 - Info</default>
+        <items>
+          <item>0 - Fatal</item>
+          <item>1 - Error</item>
+          <item>2 - Warning</item>
+          <item>3 - Info</item>
+          <item>4 - Debug</item>
+          <item>5 - Trace</item>
+          <item>6 - Ultra</item>
+        </items>
+      </property>
+      <property>
+        <name>Log Mode</name>
+        <type>LIST</type>
+        <default>Off</default>
+        <items>
+          <item>Off</item>
+          <item>Print</item>
+          <item>Log</item>
+          <item>Print and Log</item>
+        </items>
+      </property>
+      <property>
+        <name>MQTT Settings</name>
+        <type>LABEL</type>
+        <default>MQTT Settings</default>
+      </property>
+      <property>
+        <name>Command Topic</name>
+        <type>STRING</type>
+        <default/>
+        <description>Topic to publish ON/OFF commands (required)</description>
+      </property>
+      <property>
+        <name>Payload On</name>
+        <type>STRING</type>
+        <default>ON</default>
+        <description>Payload to send for ON command</description>
+      </property>
+      <property>
+        <name>Payload Off</name>
+        <type>STRING</type>
+        <default>OFF</default>
+        <description>Payload to send for OFF command</description>
+      </property>
+      <property>
+        <name>State Topic</name>
+        <type>STRING</type>
+        <default/>
+        <description>Topic to subscribe for state updates (optional, enables state feedback)</description>
+      </property>
+      <property>
+        <name>State On</name>
+        <type>STRING</type>
+        <default/>
+        <description>Payload that indicates ON state (defaults to Payload On if empty)</description>
+      </property>
+      <property>
+        <name>State Off</name>
+        <type>STRING</type>
+        <default/>
+        <description>Payload that indicates OFF state (defaults to Payload Off if empty)</description>
+      </property>
+      <property>
+        <name>Availability Topic</name>
+        <type>STRING</type>
+        <default/>
+        <description>Topic to subscribe for device availability (optional)</description>
+      </property>
+      <property>
+        <name>Payload Available</name>
+        <type>STRING</type>
+        <default>online</default>
+        <description>Payload that indicates device is available</description>
+      </property>
+      <property>
+        <name>Payload Not Available</name>
+        <type>STRING</type>
+        <default>offline</default>
+        <description>Payload that indicates device is not available</description>
+      </property>
+      <property>
+        <name>Optimistic</name>
+        <type>LIST</type>
+        <default>Auto</default>
+        <items>
+          <item>Auto</item>
+          <item>Yes</item>
+          <item>No</item>
+        </items>
+        <description>Update state immediately on command (Auto: Yes if no State Topic)</description>
+      </property>
+      <property>
+        <name>QoS</name>
+        <type>LIST</type>
+        <default>0</default>
+        <items>
+          <item>0</item>
+          <item>1</item>
+          <item>2</item>
+        </items>
+        <description>MQTT Quality of Service level</description>
+      </property>
+      <property>
+        <name>Retain</name>
+        <type>LIST</type>
+        <default>No</default>
+        <items>
+          <item>Yes</item>
+          <item>No</item>
+        </items>
+        <description>Retain command messages on the broker</description>
+      </property>
+    </properties>
+    <commands>
+      <command>
+        <name>On</name>
+        <description>Turn the switch on</description>
+      </command>
+      <command>
+        <name>Off</name>
+        <description>Turn the switch off</description>
+      </command>
+      <command>
+        <name>Toggle</name>
+        <description>Toggle the switch state</description>
+      </command>
+    </commands>
+    <actions>
+      <action>
+        <name>On</name>
+        <command>On</command>
+      </action>
+      <action>
+        <name>Off</name>
+        <command>Off</command>
+      </action>
+      <action>
+        <name>Toggle</name>
+        <command>Toggle</command>
+      </action>
+    </actions>
+  </config>
+  <capabilities/>
+  <connections>
+    <connection>
+      <id>5001</id>
+      <type>1</type>
+      <connectionname>Relay</connectionname>
+      <consumer>False</consumer>
+      <classes>
+        <class>
+          <classname>RELAY</classname>
+        </class>
+      </classes>
+    </connection>
+    <connection>
+      <id>5002</id>
+      <facing>6</facing>
+      <connectionname>MQTT Broker</connectionname>
+      <type>2</type>
+      <consumer>True</consumer>
+      <audiosource>False</audiosource>
+      <videosource>False</videosource>
+      <linelevel>False</linelevel>
+      <classes>
+        <class>
+          <classname>MQTT_BROKER</classname>
+        </class>
+      </classes>
+      <hidden>False</hidden>
+    </connection>
+  </connections>
+</devicedata>
