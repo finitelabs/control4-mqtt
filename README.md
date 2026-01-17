@@ -167,7 +167,7 @@ Control4, you can file an issue on GitHub:
 
 # <span style="color:#660066">Changelog</span>
 
-## v20250117 - 2025-01-17
+## v20260117 - 2026-01-17
 
 ### Added
 
