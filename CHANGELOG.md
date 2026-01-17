@@ -10,6 +10,15 @@
 [//]: # "### Removed"
 [//]: # "- Removed"
 
+## Unreleased
+
+### Changed
+
+- Updated MQTT Broker documentation to include Programming section with events
+  and conditionals.
+- Updated MQTT Universal documentation to include missing read-only properties
+  and BUTTON_LINK binding information.
+
 ## v20260117 - 2026-01-17
 
 ### Added

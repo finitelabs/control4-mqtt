@@ -1,4 +1,4 @@
-[copyright]: # "Copyright 2025 Finite Labs, LLC. All rights reserved."
+[copyright]: # "Copyright 2026 Finite Labs, LLC. All rights reserved."
 
 <style>
 @media print {
@@ -48,6 +48,7 @@ connect via the MQTT broker connection binding.
       - [Driver Settings](#driver-settings)
       - [MQTT Settings](#mqtt-settings)
   - [Driver Actions](#driver-actions)
+  - [Programming](#programming)
   <!-- #ifdef DRIVERCENTRAL -->
 - [Developer Information](#developer-information)
 <!-- #endif -->
@@ -243,6 +244,18 @@ of the current version.
 
 <!-- #endif -->
 
+### Programming
+
+**Events:**
+
+- **Broker Connected** - Fires when the driver connects to the MQTT broker
+- **Broker Disconnected** - Fires when the driver disconnects from the MQTT
+  broker
+
+**Conditionals:**
+
+- **Broker Connected** - Check if the broker is connected or disconnected
+
 <div style="page-break-after: always"></div>
 
 <!-- #ifdef DRIVERCENTRAL -->
@@ -253,7 +266,7 @@ of the current version.
 <img alt="Finite Labs" src="./images/finite-labs-logo.png" width="400"/>
 </p>
 
-Copyright © 2025 Finite Labs LLC
+Copyright © 2026 Finite Labs LLC
 
 All information contained herein is, and remains the property of Finite Labs LLC
 and its suppliers, if any. The intellectual and technical concepts contained
