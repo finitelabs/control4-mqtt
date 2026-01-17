@@ -17,6 +17,29 @@
   <composer_categories>
     <category>Utility</category>
   </composer_categories>
+  <conditionals>
+    <conditional>
+      <id>1</id>
+      <name>BROKER_CONNECTED</name>
+      <type>BOOL</type>
+      <condition_statement>MQTT broker connection status</condition_statement>
+      <description>NAME is STRING</description>
+      <true_text>Connected</true_text>
+      <false_text>Disconnected</false_text>
+    </conditional>
+  </conditionals>
+  <events>
+    <event>
+      <id>1</id>
+      <name>Broker Connected</name>
+      <description>When NAME connects to the MQTT broker</description>
+    </event>
+    <event>
+      <id>2</id>
+      <name>Broker Disconnected</name>
+      <description>When NAME disconnects from the MQTT broker</description>
+    </event>
+  </events>
   <config>
     <script file="driver.lua" jit="1"/>
     <documentation file="www/documentation/index.html"/>

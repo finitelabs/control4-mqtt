@@ -89,6 +89,7 @@ function Conditionals:deleteConditional(namespace, key)
 end
 
 --- Gets the next available conditional ID.
+--- @private
 --- @return number conditionalId The next available conditional ID.
 function Conditionals:_getNextConditionalId()
   log:trace("Conditionals:_getNextConditionalId()")
@@ -106,6 +107,7 @@ function Conditionals:_getNextConditionalId()
 end
 
 --- Retrieves all conditionals from persistent storage.
+--- @private
 --- @return table<string, table<string, Conditional>> conditionals A table containing all conditionals.
 function Conditionals:_getConditionals()
   log:trace("Conditionals:_getConditionals()")
@@ -113,10 +115,30 @@ function Conditionals:_getConditionals()
 end
 
 --- Saves the conditionals to persistent storage.
+--- @private
 --- @param conditionals table<string, table<string, Conditional>>? The conditionals table to save.
 function Conditionals:_saveConditionals(conditionals)
   log:trace("Conditionals:_saveConditionals(%s)", conditionals)
   persist:set(CONDITIONALS_PERSIST_KEY, not IsEmpty(conditionals) and conditionals or nil)
+end
+
+--- Retrieves all conditionals from persistent storage (public accessor).
+--- @return table<string, table<string, Conditional>> conditionals A table containing all conditionals.
+function Conditionals:getConditionals()
+  log:trace("Conditionals:getConditionals()")
+  return self:_getConditionals()
+end
+
+--- Resets all conditionals, removing them from the system and clearing persisted storage.
+function Conditionals:reset()
+  log:trace("Conditionals:reset()")
+  for _, nsConditionals in pairs(self:_getConditionals()) do
+    for _, conditional in pairs(nsConditionals) do
+      log:debug("Removing conditional '%s' (id=%s)", conditional.name, conditional.conditionalId)
+      TC[conditional.name] = nil
+    end
+  end
+  self:_saveConditionals(nil)
 end
 
 local conditionals = Conditionals:new()

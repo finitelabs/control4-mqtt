@@ -27,9 +27,9 @@
 <!-- #endif -->
 
 The MQTT Broker driver connects Control4 to an MQTT broker (such as Mosquitto,
-Home Assistant, or other MQTT-compatible platforms). It manages the connection
-and provides pub/sub services to child drivers (switch, button, contact, etc.)
-that connect via the MQTT broker connection binding.
+HiveMQ, or other MQTT-compatible platforms). It manages the connection and
+provides pub/sub services to child drivers (switch, button, contact, etc.) that
+connect via the MQTT broker connection binding.
 
 # <span style="color:#660066">Index</span>
 
@@ -103,8 +103,7 @@ is an outline of the basic steps for your convenience.
    [DriverCentral](https://drivercentral.io/platforms/control4-drivers/utility/mqtt).
 2. Extract and
    [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
-   the `mqtt_contact.c4z`, `mqtt_broker.c4z`, `mqtt_button.c4z`, and
-   `mqtt_switch.c4z` drivers.
+   the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
 3. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
    project.
 
@@ -134,8 +133,7 @@ is an outline of the basic steps for your convenience.
    [Github](https://github.com/finitelabs/control4-mqtt/releases/latest).
 2. Extract and
    [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
-   the `mqtt_contact.c4z`, `mqtt_broker.c4z`, `mqtt_button.c4z`, and
-   `mqtt_switch.c4z` drivers.
+   the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
 3. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
    project.
 

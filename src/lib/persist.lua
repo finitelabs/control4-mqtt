@@ -52,6 +52,12 @@ function Persist:get(key, default, encrypted)
   return value
 end
 
+--- Internal get implementation with caching.
+--- @private
+--- @param key string The key to retrieve.
+--- @param default any The default value if key is not found.
+--- @param encrypted boolean? Whether the value is encrypted.
+--- @return any value The retrieved value or default.
 function Persist:_get(key, default, encrypted)
   log:trace("Persist:_get(%s, %s, %s)", key, default, encrypted)
   if default == nil then
@@ -102,6 +108,16 @@ end
 function Persist:delete(key)
   log:trace("Persist:delete(%s)", key)
   self:set(key, nil)
+end
+
+--- Resets/clears specified keys from the persistence store.
+--- @param keys string[] Array of keys to delete.
+--- @return void
+function Persist:reset(keys)
+  log:trace("Persist:reset(%s)", keys)
+  for _, key in ipairs(keys) do
+    self:delete(key)
+  end
 end
 
 return Persist:new()

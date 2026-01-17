@@ -17,6 +17,15 @@
 
 ---
 
+# ⚠️ <span style="color:#cc0000">DEPRECATED</span>
+
+> **This driver is deprecated.** Please use the **MQTT Universal** driver
+> instead, which provides all the functionality of this driver plus additional
+> features like conditionals, events, state variables, and support for multiple
+> devices in a single driver instance.
+
+---
+
 # <span style="color:#660066">Overview</span>
 
 <!-- #ifndef DRIVERCENTRAL -->

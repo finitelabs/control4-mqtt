@@ -30,10 +30,19 @@ Module "lib.persist" "../../src/lib/persist.lua"
 Module "lib.utils" "../../src/lib/utils.lua"
 Module "lib.values" "../../src/lib/values.lua"
 
+Module "mqtt.state_parser" "../../src/mqtt/state_parser.lua"
+Module "mqtt.entities.base" "../../src/mqtt/entities/base.lua"
+Module "mqtt.entities.relay" "../../src/mqtt/entities/relay.lua"
+Module "mqtt.entities.contact" "../../src/mqtt/entities/contact.lua"
+Module "mqtt.entities.button" "../../src/mqtt/entities/button.lua"
+Module "mqtt.entities.variable" "../../src/mqtt/entities/variable.lua"
+Module "mqtt.entities.sensor" "../../src/mqtt/entities/sensor.lua"
+Module "mqtt.entities.device" "../../src/mqtt/entities/device.lua"
+
 #ifdef DRIVERCENTRAL
-Output "../../../../dist/drivercentral/mqtt_switch.lua"
+Output "../../../../dist/drivercentral/mqtt_universal.lua"
 #else
-Output "../../../../dist/oss/mqtt_switch.lua"
+Output "../../../../dist/oss/mqtt_universal.lua"
 #endif
 Option "minify" "true"
 Option "minify_level" "none"

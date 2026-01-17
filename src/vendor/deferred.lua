@@ -2,32 +2,37 @@
 --- @module "vendor.deferred"
 local M = {}
 
---- @class Deferred<S,F>
 --- @generic S,F,V
---- @field next fun(self: Deferred<S,F>, success: (fun(value: S): V), failure: (fun(reason: F): V)?): Deferred<V,F>  A function for chaining promises, taking success and failure callbacks and returning a new Deferred object.
---- @field state number The current state of the promise (e.g., PENDING, RESOLVING, REJECTING, RESOLVED, REJECTED).
+--- @class Deferred<S,F>
+--- @field next fun(self: Deferred<S,F>, success: (fun(value: S): V?)?, failure: (fun(reason: F): V?)?): Deferred<V,F>  A function for chaining promises, taking success and failure callbacks and returning a new Deferred object.
+--- @field state DeferredState The current state of the promise (e.g., PENDING, RESOLVING, REJECTING, RESOLVED, REJECTED).
 --- @field value S|F The resolved or rejected value of the promise.
---- @field queue table<number, Deferred<S>> A list of chained promises.
+--- @field queue Deferred<S,F>[] A list of chained promises.
 --- @field success fun(value: S)|nil The success callback function.
 --- @field failure fun(reason: F)|nil The failure callback function.
 local Deferred = {}
 Deferred.__index = Deferred
 
---- Promise states
-Deferred.PENDING = 0
-Deferred.RESOLVING = 1
-Deferred.REJECTING = 2
-Deferred.RESOLVED = 3
-Deferred.REJECTED = 4
+--- Deferred states
+--- @enum DeferredState
+local DeferredState = {
+  PENDING = 0,
+  RESOLVING = 1,
+  REJECTING = 2,
+  RESOLVED = 3,
+  REJECTED = 4,
+}
 
 --- Finalizes the promise by resolving or rejecting it.
 --- @generic S,F
 --- @param deferred Deferred<S,F> The deferred object.
---- @param state? number The final state of the promise (RESOLVED or REJECTED).
+--- @param state? DeferredState The final state of the promise (RESOLVED or REJECTED).
 local function finish(deferred, state)
-  state = state or Deferred.REJECTED
+  if state == nil then
+    state = DeferredState.REJECTED
+  end
   for _, f in ipairs(deferred.queue) do
-    if state == Deferred.RESOLVED then
+    if state == DeferredState.RESOLVED then
       --- @cast deferred.value S
       f:resolve(deferred.value)
     else
@@ -52,14 +57,16 @@ end
 --- Handles promise chaining and resolution.
 --- @generic S,V,F
 --- @param deferred Deferred<S,F> The deferred object.
---- @param next fun(self: Deferred<S,F>, success: (fun(value: S): V), failure: (fun(reason: F): V)?) The next function in the chain.
+--- @param nextFn fun(self: Deferred<S,F>, success: (fun(value: S): V?)?, failure: (fun(reason: F): V?)?)? The next function in the chain.
 --- @param success function The success callback.
 --- @param failure function The failure callback.
 --- @param nonpromisecb function The callback for non-promise values.
-local function promise(deferred, next, success, failure, nonpromisecb)
-  if type(deferred) == "table" and type(deferred.value) == "table" and isfunction(next) then
+local function promise(deferred, nextFn, success, failure, nonpromisecb)
+  if type(deferred) == "table" and type(deferred.value) == "table" and isfunction(nextFn) then
+    --- @cast nextFn -nil
+    --- @cast deferred.value Deferred<S,F>
     local called = false
-    local ok, err = pcall(next, deferred.value, function(v)
+    local ok, err = pcall(nextFn, deferred.value, function(v)
       if called then
         return
       end
@@ -87,26 +94,26 @@ end
 --- @generic S,F
 --- @param deferred Deferred<S,F> The deferred object.
 local function fire(deferred)
-  local next
+  local nextFn
   if type(deferred.value) == "table" then
-    next = deferred.value.next
+    nextFn = deferred.value.next
   end
-  promise(deferred, next, function()
-    deferred.state = Deferred.RESOLVING
+  promise(deferred, nextFn, function()
+    deferred.state = DeferredState.RESOLVING
     fire(deferred)
   end, function()
-    deferred.state = Deferred.REJECTING
+    deferred.state = DeferredState.REJECTING
     fire(deferred)
   end, function()
     local ok, v
-    if deferred.state == Deferred.RESOLVING and deferred.success ~= nil and isfunction(deferred.success) then
+    if deferred.state == DeferredState.RESOLVING and deferred.success ~= nil and isfunction(deferred.success) then
       --- @cast deferred.value S
       ok, v = pcall(deferred.success, deferred.value)
-    elseif deferred.state == Deferred.REJECTING and deferred.failure ~= nil and isfunction(deferred.failure) then
+    elseif deferred.state == DeferredState.REJECTING and deferred.failure ~= nil and isfunction(deferred.failure) then
       --- @cast deferred.value F
       ok, v = pcall(deferred.failure, deferred.value)
       if ok then
-        deferred.state = Deferred.RESOLVING
+        deferred.state = DeferredState.RESOLVING
       end
     end
 
@@ -123,12 +130,12 @@ local function fire(deferred)
       deferred.value = pcall(error, "resolving promise with itself")
       return finish(deferred)
     else
-      promise(deferred, next, function()
-        finish(deferred, Deferred.RESOLVED)
+      promise(deferred, nextFn, function()
+        finish(deferred, DeferredState.RESOLVED)
       end, function(state)
         finish(deferred, state)
       end, function()
-        finish(deferred, deferred.state == Deferred.RESOLVING and Deferred.RESOLVED or Deferred.REJECTED)
+        finish(deferred, deferred.state == DeferredState.RESOLVING and DeferredState.RESOLVED or DeferredState.REJECTED)
       end)
     end
   end)
@@ -137,11 +144,11 @@ end
 --- Resolves or rejects the promise.
 --- @generic S,F
 --- @param deferred Deferred<S,F> The deferred object.
---- @param state number The state to resolve or reject to.
+--- @param state DeferredState The state to resolve or reject to.
 --- @param value S|F The value to resolve or reject with.
 --- @return Deferred<S,F> deferred The deferred object.
 local function resolve(deferred, state, value)
-  if deferred.state == Deferred.PENDING then
+  if deferred.state == DeferredState.PENDING then
     deferred.value = value
     deferred.state = state
     fire(deferred)
@@ -154,7 +161,7 @@ end
 --- @param value S The value to resolve with.
 --- @return Deferred<S,F> deferred The deferred object.
 function Deferred:resolve(value)
-  return resolve(self, Deferred.RESOLVING, value)
+  return resolve(self, DeferredState.RESOLVING, value)
 end
 
 --- Rejects the promise with a value.
@@ -162,7 +169,7 @@ end
 --- @param value F The value to reject with.
 --- @return Deferred<S,F> deferred The deferred object.
 function Deferred:reject(value)
-  return resolve(self, Deferred.REJECTING, value)
+  return resolve(self, DeferredState.REJECTING, value)
 end
 
 --- Creates a new deferred object.
@@ -171,26 +178,25 @@ end
 --- @return Deferred<S,F> deferred A new deferred object.
 function M.new(options)
   options = options or {}
-  local d
-  d = {
-    next = function(_, success, failure)
-      local next = M.new({ success = success, failure = failure, extend = options.extend })
-      if d.state == Deferred.RESOLVED then
-        next:resolve(d.value)
-      elseif d.state == Deferred.REJECTED then
-        next:reject(d.value)
-      else
-        table.insert(d.queue, next)
-      end
-      return next
-    end,
-    state = Deferred.PENDING,
-    value = nil,
-    queue = {},
-    success = options.success,
-    failure = options.failure,
-  }
-  d = setmetatable(d, Deferred)
+  --- @type Deferred<S,F>
+  local d = setmetatable({}, Deferred)
+  d.next = function(_, success, failure)
+    local nextFn = M.new({ success = success, failure = failure, extend = options.extend })
+    if d.state == DeferredState.RESOLVED then
+      nextFn:resolve(d.value)
+    elseif d.state == DeferredState.REJECTED then
+      nextFn:reject(d.value)
+    else
+      table.insert(d.queue, nextFn)
+    end
+    return nextFn
+  end
+  d.state = DeferredState.PENDING
+  d.value = nil
+  d.queue = {}
+  d.success = options.success
+  d.failure = options.failure
+
   if isfunction(options.extend) then
     options.extend(d)
   end
@@ -270,7 +276,7 @@ end
 
 --- Resolves as soon as the first promise in the list is resolved or rejected.
 --- @generic S,F
---- @param args table<number, Deferred<S,F>> A list of promises.
+--- @param args Deferred<S,F>[] A list of promises.
 --- @return Deferred<S,F> deferred A new promise.
 function M.first(args)
   --- @type Deferred<S,F>

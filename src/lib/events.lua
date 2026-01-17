@@ -123,6 +123,7 @@ function Events:restoreEvents()
 end
 
 --- Retrieves the next available event ID. Ensures that the ID is unique and within the allowed range.
+--- @private
 --- @return number eventId The next available event ID.
 function Events:_getNextEventId()
   log:trace("Events:_getNextEventId()")
@@ -141,6 +142,7 @@ function Events:_getNextEventId()
 end
 
 --- Retrieves all events from persistent storage.
+--- @private
 --- @return table<string, table<string, Event>> events A table of all events mapped by namespace then key.
 function Events:_getEvents()
   log:trace("Events:_getEvents()")
@@ -148,10 +150,30 @@ function Events:_getEvents()
 end
 
 --- Saves the events to persistent storage.
+--- @private
 --- @param events table<string, table<string, Event>>? The events table to save.
 function Events:_saveEvents(events)
   log:trace("Events:_saveEvents(%s)", events)
   persist:set(EVENTS_PERSIST_KEY, not IsEmpty(events) and events or nil)
+end
+
+--- Retrieves all events from persistent storage (public accessor).
+--- @return table<string, table<string, Event>> events A table of all events mapped by namespace then key.
+function Events:getEvents()
+  log:trace("Events:getEvents()")
+  return self:_getEvents()
+end
+
+--- Resets all dynamic events, removing them from the system and clearing persisted storage.
+function Events:reset()
+  log:trace("Events:reset()")
+  for _, nsEvents in pairs(self:_getEvents()) do
+    for _, event in pairs(nsEvents) do
+      log:debug("Removing event '%s' (id=%s)", event.name, event.eventId)
+      C4:DeleteEvent(event.eventId)
+    end
+  end
+  self:_saveEvents(nil)
 end
 
 return Events:new()
