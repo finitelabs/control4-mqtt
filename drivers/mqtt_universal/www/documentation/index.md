@@ -1,4 +1,4 @@
-[copyright]: # "Copyright 2025 Finite Labs, LLC. All rights reserved."
+[copyright]: # "Copyright 2026 Finite Labs, LLC. All rights reserved."
 
 <style>
 @media print {
@@ -74,7 +74,8 @@ integration with any MQTT-based system.
 
 - **Relays** - Create RELAY bindings for on/off control with state feedback
 - **Contact Sensors** - Create CONTACT_SENSOR bindings for open/closed state
-- **Buttons** - Publish press commands to MQTT topics
+- **Buttons** - Publish press commands to MQTT topics, with optional keypad
+  linking
 
 **Variables:**
 
@@ -147,6 +148,14 @@ These settings control global device availability for all items in the driver.
 
 The MQTT topic to subscribe for availability status (optional). When a message
 is received, the driver will fire Device Available or Device Unavailable events.
+
+##### Availability Topic Value (read-only)
+
+Shows the raw payload received from the availability topic.
+
+##### Availability Status (read-only)
+
+Shows the current availability status (Available or Unavailable).
 
 ##### Payload Available
 
@@ -237,6 +246,15 @@ available properties depend on the item type and configured topics.
 
 The MQTT topic to subscribe for state updates.
 
+##### State Topic Value (read-only)
+
+Shows the raw payload received from the state topic.
+
+##### State (read-only)
+
+Shows the current state of the selected item (e.g., "On"/"Off" for relays,
+"Open"/"Closed" for contacts).
+
 ##### Command Topic
 
 The MQTT topic to publish commands to.
@@ -302,16 +320,17 @@ These properties appear based on topic configuration:
 
 ## Connections
 
-When you add relays, contacts, or sensor variables, dynamic bindings are created
-that appear in the Connections tab:
+When you add relays, contacts, buttons, or sensor variables, dynamic bindings
+are created that appear in the Connections tab:
 
 - **Relays** create RELAY bindings
 - **Contacts** create CONTACT_SENSOR bindings
+- **Buttons** create BUTTON_LINK bindings (for keypad integration)
 - **Temperature variables** create TEMPERATURE_VALUE bindings
 - **Humidity variables** create HUMIDITY_VALUE bindings
 
 These bindings can be connected to other Control4 devices (thermostats, security
-panels, etc.) or used directly in programming.
+panels, keypads, etc.) or used directly in programming.
 
 ### Programming
 
@@ -344,7 +363,7 @@ publishing to the command topic.
 <img alt="Finite Labs" src="./images/finite-labs-logo.png" width="400"/>
 </p>
 
-Copyright 2025 Finite Labs LLC
+Copyright 2026 Finite Labs LLC
 
 All information contained herein is, and remains the property of Finite Labs LLC
 and its suppliers, if any. The intellectual and technical concepts contained

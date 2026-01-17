@@ -27,6 +27,7 @@ binding.
       - [Driver Settings](#driver-settings)
       - [MQTT Settings](#mqtt-settings)
   - [Driver Actions](#driver-actions)
+  - [Programming](#programming)
 - [Support](#support)
 - [Changelog](#changelog)
 
@@ -152,6 +153,20 @@ Manually trigger a reconnection to the MQTT broker.
 Trigger all MQTT drivers to update from the latest release on GitHub,
 regardless of the current version.
 
+### Programming
+
+**Events:**
+
+- **Broker Connected** - Fires when the driver connects to the MQTT
+  broker
+- **Broker Disconnected** - Fires when the driver disconnects from the
+  MQTT broker
+
+**Conditionals:**
+
+- **Broker Connected** - Check if the broker is connected or
+  disconnected
+
 <div style="page-break-after: always"></div>
 
 # <span style="color:#660066">Support</span>
@@ -166,6 +181,15 @@ Control4, you can file an issue on GitHub:
 <div style="page-break-after: always"></div>
 
 # <span style="color:#660066">Changelog</span>
+
+## Unreleased
+
+### Changed
+
+- Updated MQTT Broker documentation to include Programming section with
+  events and conditionals.
+- Updated MQTT Universal documentation to include missing read-only
+  properties and BUTTON_LINK binding information.
 
 ## v20260117 - 2026-01-17
 

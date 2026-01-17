@@ -8,7 +8,7 @@
   <large image_source="c4z">icons/device_lg.png</large>
   <control>lua_gen</control>
   <driver>DriverWorks</driver>
-  <copyright>Copyright 2025 Finite Labs, LLC. All rights reserved.</copyright>
+  <copyright>Copyright 2026 Finite Labs, LLC. All rights reserved.</copyright>
   <created>12/31/2025 12:00:00 PM</created>
   <modified/>
   <combo>true</combo>
