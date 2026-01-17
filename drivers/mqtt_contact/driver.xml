@@ -22,6 +22,11 @@
     <script file="driver.lua" jit="1"/>
     <documentation file="www/documentation/index.html"/>
     <properties>
+      <property>
+        <name>Deprecated</name>
+        <type>LABEL</type>
+        <default>~~~~~~~~~~~~~~!!! This driver is deprecated. Use MQTT Universal driver instead. !!!️~~~~~~~~~~~~~~</default>
+      </property>
       <!-- #ifdef DRIVERCENTRAL -->
       <property>
         <name>Cloud Settings</name>

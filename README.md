@@ -8,10 +8,10 @@
 > either Control4 or MQTT.
 
 The MQTT Broker driver connects Control4 to an MQTT broker (such as
-Mosquitto, Home Assistant, or other MQTT-compatible platforms). It
-manages the connection and provides pub/sub services to child drivers
-(switch, button, contact, etc.) that connect via the MQTT broker
-connection binding.
+Mosquitto, HiveMQ, or other MQTT-compatible platforms). It manages the
+connection and provides pub/sub services to child drivers (switch,
+button, contact, etc.) that connect via the MQTT broker connection
+binding.
 
 # <span style="color:#660066">Index</span>
 
@@ -62,8 +62,7 @@ drivers. Below is an outline of the basic steps for your convenience.
 
 2.  Extract and
     [install]((https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm))
-    the `mqtt_contact.c4z`, `mqtt_broker.c4z`, `mqtt_button.c4z`, and
-    `mqtt_switch.c4z` drivers.
+    the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
 
 3.  Use the "Search" tab to find the "MQTT Broker" driver and add it to
     your project.
@@ -167,6 +166,26 @@ Control4, you can file an issue on GitHub:
 <div style="page-break-after: always"></div>
 
 # <span style="color:#660066">Changelog</span>
+
+## v20250117 - 2025-01-17
+
+### Added
+
+- Added the MQTT Universal driver for managing multiple MQTT devices
+  from a single driver instance. Supports relays, contacts, buttons,
+  variables, and sensors with features including:
+  - Keypad button linking for MQTT buttons
+  - Device availability conditionals and events
+  - State variables for relay and contact items
+  - JSONPath value extraction for complex JSON payloads
+- Added "Broker Connected" conditional and events to the MQTT Broker
+  driver.
+
+### Deprecated
+
+- Deprecated the MQTT Switch, MQTT Contact, and MQTT Button drivers. Use
+  MQTT Universal instead. This is the terminal release for these
+  drivers.
 
 ## v20251229 - 2025-12-29
 

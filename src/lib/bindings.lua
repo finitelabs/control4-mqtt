@@ -169,8 +169,16 @@ function Bindings:deleteBinding(namespace, key)
   self:_saveBindings(bindings)
 end
 
+--- Check if a binding ID is within the managed dynamic binding ranges.
+--- @param bindingId number The binding ID to check.
+--- @return boolean True if the binding ID is within a managed range.
+local function isInManagedRange(bindingId)
+  return (bindingId >= CONTROL_BINDING_START and bindingId <= CONTROL_BINDING_END)
+    or (bindingId >= PROXY_BINDING_START and bindingId <= PROXY_BINDING_END)
+end
+
 --- Restores all dynamic bindings from persistent storage. Ensures that all
---- bindings are re-added and removes unknown bindings.
+--- bindings are re-added and removes unknown bindings within managed ranges.
 function Bindings:restoreBindings()
   log:trace("Binding:restoreBindings()")
   local deviceBindings = GetDeviceBindings(C4:GetDeviceID())
@@ -189,14 +197,19 @@ function Bindings:restoreBindings()
       )
     end
   end
+  -- Only remove unknown bindings that are within our managed ranges
+  -- This preserves static bindings defined in driver.xml
   for bindingId, _ in pairs(deviceBindings) do
-    log:debug("Deleting unknown binding %s", bindingId)
-    C4:RemoveDynamicBinding(bindingId)
+    if isInManagedRange(bindingId) then
+      log:debug("Deleting unknown binding %s", bindingId)
+      C4:RemoveDynamicBinding(bindingId)
+    end
   end
 end
 
 --- Retrieves the next available binding ID for a given type. Ensures that the
 --- ID is unique and within the allowed range.
+--- @private
 --- @param type string The type of the binding (e.g., "CONTROL" or "PROXY").
 --- @return number|nil bindingId The next available binding ID or nil if the maximum is exceeded.
 function Bindings:_getNextBindingId(type)
@@ -230,10 +243,26 @@ function Bindings:getBindings()
 end
 
 --- Saves the bindings to persistent storage.
+--- @private
 --- @param bindings table<string, table<string, Binding>>? The bindings table to save.
 function Bindings:_saveBindings(bindings)
   log:trace("Binding:_saveBindings(%s)", bindings)
   persist:set(CONNECTION_BINDINGS_PERSIST_KEY, not IsEmpty(bindings) and bindings or nil)
+end
+
+--- Resets all dynamic bindings, removing them from the system and clearing persisted storage.
+--- This does not affect static bindings defined in driver.xml.
+function Bindings:reset()
+  log:trace("Bindings:reset()")
+  for _, nsBindings in pairs(self:getBindings()) do
+    for _, binding in pairs(nsBindings) do
+      log:debug("Removing binding '%s' (id=%s)", binding.displayName, binding.bindingId)
+      C4:RemoveDynamicBinding(binding.bindingId)
+      RFP[binding.bindingId] = nil
+      OBC[binding.bindingId] = nil
+    end
+  end
+  self:_saveBindings(nil)
 end
 
 return Bindings:new()

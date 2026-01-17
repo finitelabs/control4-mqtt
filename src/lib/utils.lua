@@ -7,6 +7,42 @@ local log = require("lib.logging")
 
 local constants = require("constants")
 
+do
+  --- @type table<string, fun(paramName: string): string[]>
+  --- Global table mapping command names to functions.
+  --- Each function takes a parameter name and returns a list of parameter values.
+  GCPL = GCPL or {}
+end
+
+--- Retrieves a list of command parameters for a given command name.
+--- @param commandName string The name of the command to retrieve parameters for.
+--- @param paramName string The specific parameter to retrieve associated with the command.
+--- @return any|nil parameters Returns the list of parameters if successful; nil otherwise.
+function GetCommandParamList(commandName, paramName)
+  commandName = string.gsub(commandName, "%W", "_")
+  commandName = string.gsub(commandName, "[_]+", "_")
+  commandName = string.gsub(commandName, "^[_| ]+", "")
+  commandName = string.gsub(commandName, "[_| ]+$", "")
+
+  local init = {
+    "GetCommandParamList: " .. commandName,
+    paramName,
+  }
+  HandlerDebug(init)
+
+  local success, ret
+
+  if GCPL and GCPL[commandName] and type(GCPL[commandName]) == "function" then
+    success, ret = pcall(GCPL[commandName], paramName)
+  end
+
+  if success == true then
+    return ret
+  elseif success == false then
+    print("GetCommandParamList error: ", ret, commandName, paramName)
+  end
+end
+
 --- Checks if the current OS version meets the minimum required version as defined in the driver configuration.
 --- @param statusProperty string The property to update with the status message if the version check fails.
 --- @return boolean meetsMinVersion True if the version check passes, false otherwise.
@@ -332,18 +368,26 @@ end
 --- Produces a list containing only unique values from the input table.
 --- Removes duplicate values while maintaining the original order.
 --- @param t table Array-like table to process
+--- @param mapper? fun(value: any): any Optional function to map values before checking for uniqueness.
 --- @return table uniqueList New table containing unique values
-function UniqueList(t)
+function UniqueList(t, mapper)
   if type(t) ~= "table" then
     return {}
   end
+  if type(mapper) ~= "function" then
+    mapper = function(v)
+      return v
+    end
+  end
+
   local seen = {}
   local list = {}
 
   for _, v in ipairs(t) do
-    if not seen[v] then
+    local key = mapper(v)
+    if not seen[key] then
       table.insert(list, v)
-      seen[v] = true
+      seen[key] = true
     end
   end
   return list

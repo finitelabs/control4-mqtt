@@ -6,6 +6,8 @@ DC_FILENAME = "mqtt_broker.c4z"
 DRIVER_GITHUB_REPO = "finitelabs/control4-mqtt"
 DRIVER_FILENAMES = {
   "mqtt_broker.c4z",
+  "mqtt_universal.c4z",
+  -- Deprecated
   "mqtt_button.c4z",
   "mqtt_contact.c4z",
   "mqtt_switch.c4z",
@@ -135,6 +137,20 @@ local function updateStatus(status)
   UpdateProperty("Driver Status", not IsEmpty(status) and status or "Unknown")
 end
 
+--- Test condition for MQTT broker connection status
+--- @param strConditionName string The name of the condition
+--- @param tParams table Parameters for the condition test
+--- @return boolean result True if the condition is met
+function TC.BROKER_CONNECTED(strConditionName, tParams)
+  log:trace("TC.BROKER_CONNECTED(%s, %s)", strConditionName, tParams)
+  local test = Select(tParams, "VALUE") == "Connected"
+  if Select(tParams, "LOGIC") == "NOT_EQUAL" then
+    return test ~= MQTT_CONNECTED
+  else
+    return test == MQTT_CONNECTED
+  end
+end
+
 --- Notify all connected child drivers of an event
 --- @param command string The command to send
 --- @param params table The parameters to send
@@ -222,6 +238,7 @@ function Connect()
     if reasonCode == 0 then
       MQTT_CONNECTED = true
       updateStatus("Connected")
+      C4:FireEvent("Broker Connected")
 
       -- Re-subscribe to all tracked topics
       for topic, bindings in pairs(subscriptions) do
@@ -250,6 +267,7 @@ function Connect()
     log:warn("MQTT:OnDisconnect reasonCode=%s - %s", reasonCode, reasonString)
     MQTT_CONNECTED = false
     updateStatus("Disconnected")
+    C4:FireEvent("Broker Disconnected")
 
     -- Notify child drivers
     notifyChildDrivers("BROKER_DISCONNECTED", {})

@@ -97,11 +97,12 @@ local function fixFormatArgs(numArgs, args)
   for i = 1, numArgs + 1 do
     if args[i] == nil then
       args[i] = "nil"
-    end
-    if type(args[i]) == "table" then
+    elseif type(args[i]) == "table" then
       args[i] = JSON:encode(args[i])
-    end
-    if type(args[i]) ~= "string" and type(args[i]) ~= "number" then
+    elseif type(args[i]) == "number" then
+      -- Use tostring_return_period to avoid scientific notation for large integers
+      args[i] = tostring_return_period(args[i])
+    elseif type(args[i]) ~= "string" then
       args[i] = tostring(args[i])
     end
   end
@@ -214,6 +215,7 @@ local function addLinePrefix(sPrefix, sLogText)
 end
 
 --- Logs a message with the specified level.
+--- @private
 --- @param level number The log level.
 --- @param sLogText any The log message.
 --- @param numArgs number The number of arguments.
@@ -263,6 +265,7 @@ local function _getLevelPrefix(level)
 end
 
 --- Gets the prefix for print output.
+--- @private
 --- @param level number The log level.
 --- @return string printPrefix The print prefix.
 function Log:_getPrintPrefix(level)
@@ -271,6 +274,7 @@ function Log:_getPrintPrefix(level)
 end
 
 --- Gets the prefix for C4 log output.
+--- @private
 --- @param level number The log level.
 --- @return string logPrefix The C4 log prefix.
 function Log:_getLogPrefix(level)

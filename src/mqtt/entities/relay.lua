@@ -1,0 +1,200 @@
+--- MQTT Relay entity.
+--- Handles on/off state, command publishing, and relay binding notifications.
+--- @class MqttRelay:MqttEntity
+--- @field _state boolean|nil Current relay state (true = on, false = off).
+
+local log = require("lib.logging")
+local bindings = require("lib.bindings")
+local values = require("lib.values")
+local stateParser = require("mqtt.state_parser")
+local MqttEntity = require("mqtt.entities.base")
+
+local MqttRelay = setmetatable({
+  TYPE = "RELAY",
+  BINDING_CLASS = "RELAY",
+  BINDING_TYPE = "PROXY",
+  BINDINGS_NAMESPACE = "MQTTUniversal",
+}, { __index = MqttEntity })
+
+--- Create a new relay entity instance.
+--- @param item table The item configuration.
+--- @param brokerBinding number The broker binding ID.
+--- @return MqttRelay
+function MqttRelay:new(item, brokerBinding)
+  local instance = MqttEntity.new(self, item, brokerBinding)
+  setmetatable(instance, self)
+  self.__index = self
+  return instance
+end
+
+--- Get the binding key for this relay.
+--- @return string
+function MqttRelay:getBindingKey()
+  return "item_" .. self:getId()
+end
+
+--- Check if relay should use optimistic mode.
+--- @return boolean
+function MqttRelay:isOptimistic()
+  if self.item.optimistic == "Yes" then
+    return true
+  elseif self.item.optimistic == "No" then
+    return false
+  else -- "Auto"
+    return IsEmpty(self.item.stateTopic)
+  end
+end
+
+--- Parse relay state from payload using "match one, default other" logic.
+--- @param value string The payload value.
+--- @return boolean|nil
+function MqttRelay:parseState(value)
+  local stateOn = self.item.stateOn or ""
+  local stateOff = self.item.stateOff or ""
+  return stateParser.parse(value, stateOn, stateOff)
+end
+
+--- Get the current relay state.
+--- @return boolean|nil state True = on, false = off, nil = unknown.
+function MqttRelay:getState()
+  return self._state
+end
+
+--- Get state as display text.
+--- @return string
+function MqttRelay:getStateText()
+  if self._state == nil then
+    return ""
+  end
+  return self._state and "On" or "Off"
+end
+
+--- Process the extracted value and update state.
+--- @param value string The extracted value.
+--- @param rawPayload string The original raw payload.
+--- @return boolean changed Whether the state changed.
+function MqttRelay:_processValue(value, rawPayload)
+  local newState = self:parseState(value)
+  if newState == nil then
+    log:debug("Relay '%s' - could not parse state from: %s", self:getName(), value)
+    return false
+  end
+
+  return self:_updateState(newState, rawPayload)
+end
+
+--- Update the relay state and notify binding.
+--- @param newState boolean The new state.
+--- @param payload string|nil The raw payload (for display).
+--- @return boolean changed Whether the state changed.
+function MqttRelay:_updateState(newState, payload)
+  local changed = self._state ~= newState
+  self._state = newState
+
+  if not changed then
+    return false
+  end
+
+  local stateText = self:getStateText()
+
+  -- Update C4 variable for programming
+  values:update(self:getStateVarName(), stateText, "STRING")
+
+  -- Notify binding
+  local binding = bindings:getDynamicBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
+  if binding then
+    local bindingState = newState and "CLOSED" or "OPENED"
+    log:debug("Sending relay state %s to binding %s", bindingState, binding.bindingId)
+    SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
+  end
+
+  log:info("Relay '%s' state: %s", self:getName(), stateText)
+  return true
+end
+
+--- Publish a command to the relay.
+--- @param state boolean Target state (true = on, false = off).
+function MqttRelay:command(state)
+  if IsEmpty(self.item.commandTopic) then
+    log:warn("Cannot command relay '%s' - no command topic configured", self:getName())
+    return
+  end
+
+  local payload = state and (self.item.payloadOn or "ON") or (self.item.payloadOff or "OFF")
+
+  log:info("Publishing relay command: %s -> %s", self.item.commandTopic, payload)
+  self:publish(self.item.commandTopic, payload)
+
+  -- Optimistic update
+  if self:isOptimistic() then
+    self:_updateState(state, nil)
+  end
+end
+
+--- Toggle the relay state.
+function MqttRelay:toggle()
+  self:command(not self._state)
+end
+
+--- Register the relay binding and RFP/OBC handlers.
+--- @return table|nil binding The created binding or nil on failure.
+function MqttRelay:registerBinding()
+  local binding = bindings:getOrAddDynamicBinding(
+    self.BINDINGS_NAMESPACE,
+    self:getBindingKey(),
+    self.BINDING_TYPE,
+    true, -- provider
+    self:getName(),
+    self.BINDING_CLASS
+  )
+
+  if binding == nil then
+    log:error("Failed to create binding for relay '%s'", self:getName())
+    return nil
+  end
+
+  log:info("Registered RELAY binding for '%s' (bindingId=%s)", self:getName(), binding.bindingId)
+
+  -- Register RFP handler for commands from Control4
+  local entity = self
+  RFP[binding.bindingId] = function(idBinding, strCommand, tParams, _args)
+    log:debug("RFP[%s] strCommand=%s tParams=%s", idBinding, strCommand, tParams)
+
+    if strCommand == "ON" or strCommand == "CLOSE" then
+      entity:command(true)
+    elseif strCommand == "OFF" or strCommand == "OPEN" then
+      entity:command(false)
+    elseif strCommand == "TOGGLE" then
+      entity:toggle()
+    elseif strCommand == "TRIGGER" then
+      local pulseTime = tonumber(Select(tParams, "TIME")) or 0
+      entity:command(true)
+      if pulseTime > 0 then
+        SetTimer("Pulse_" .. entity:getId(), pulseTime, function()
+          entity:command(false)
+        end)
+      end
+    else
+      log:warn("Unhandled command from relay binding %s: %s", idBinding, strCommand)
+    end
+  end
+
+  -- Register OBC handler for binding changes
+  OBC[binding.bindingId] = function(idBinding, _strClass, bIsBound, otherDeviceId, _otherBindingId)
+    log:debug("OBC[%s] bIsBound=%s otherDeviceId=%s", idBinding, bIsBound, otherDeviceId)
+    if bIsBound and entity._state ~= nil then
+      local bindingState = entity._state and "CLOSED" or "OPENED"
+      SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
+    end
+  end
+
+  return binding
+end
+
+--- Unregister the relay binding.
+function MqttRelay:unregisterBinding()
+  bindings:deleteBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
+  log:debug("Unregistered binding for relay '%s'", self:getName())
+end
+
+return MqttRelay
