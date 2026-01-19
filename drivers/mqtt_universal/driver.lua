@@ -27,6 +27,7 @@ local MqttDevice = require("mqtt.entities.device")
 local MqttRelay = require("mqtt.entities.relay")
 local MqttContact = require("mqtt.entities.contact")
 local MqttButton = require("mqtt.entities.button")
+local MqttEvent = require("mqtt.entities.event")
 local MqttVariable = require("mqtt.entities.variable")
 local MqttSensor = require("mqtt.entities.sensor")
 
@@ -44,6 +45,7 @@ local ENTITY_CLASSES = {
   RELAY = MqttRelay,
   CONTACT = MqttContact,
   BUTTON = MqttButton,
+  EVENT = MqttEvent,
   STRING = MqttVariable,
   BOOL = MqttVariable,
   NUMBER = MqttVariable,
@@ -246,6 +248,8 @@ local function addItem(name, itemType)
     stateClosed = "",
     -- Button-specific (no default - user must set payload)
     payloadPress = "",
+    -- Event-specific (no default - user sets filter if needed)
+    eventTypeFilter = "",
     -- Temperature-specific defaults
     temperatureScale = "Celsius",
     -- JSONPath value extraction
@@ -300,8 +304,8 @@ local function deleteItem(itemId)
       entity:deleteVariable()
     end
 
-    -- Delete state variable for relays and contacts
-    if item.itemType == "RELAY" or item.itemType == "CONTACT" then
+    -- Delete state variable for relays, contacts, and events
+    if item.itemType == "RELAY" or item.itemType == "CONTACT" or item.itemType == "EVENT" then
       values:delete(entity:getStateVarName())
     end
 
@@ -374,6 +378,7 @@ local function updateItemProperties()
   UpdateProperty("Add Relay", "")
   UpdateProperty("Add Contact", "")
   UpdateProperty("Add Button", "")
+  UpdateProperty("Add Event", "")
   UpdateProperty("Add String Variable", "")
   UpdateProperty("Add Bool Variable", "")
   UpdateProperty("Add Number Variable", "")
@@ -409,6 +414,7 @@ end
 --- @field isRelay boolean Whether selected item is a relay
 --- @field isContact boolean Whether selected item is a contact
 --- @field isButton boolean Whether selected item is a button
+--- @field isEvent boolean Whether selected item is an event
 --- @field isTemp boolean Whether selected item is a temperature sensor
 --- @field isHumidity boolean Whether selected item is a humidity sensor
 --- @field isSensor boolean Whether selected item is a sensor (temp or humidity)
@@ -426,7 +432,7 @@ local VISIBILITY_RULES = {
     return ctx.hasItem and not ctx.isButton
   end,
   ["Command Topic"] = function(ctx)
-    return ctx.hasItem and not ctx.isContact and not ctx.isSensor
+    return ctx.hasItem and not ctx.isContact and not ctx.isSensor and not ctx.isEvent
   end,
   ["QoS"] = function(ctx)
     return ctx.hasStateTopic or ctx.hasCommandTopic
@@ -458,6 +464,9 @@ local VISIBILITY_RULES = {
   ["Payload Press"] = function(ctx)
     return ctx.isButton and ctx.hasCommandTopic
   end,
+  ["Event Type Filter"] = function(ctx)
+    return ctx.isEvent
+  end,
   ["Temperature Scale"] = function(ctx)
     return ctx.isTemp
   end,
@@ -488,6 +497,7 @@ local PROPERTY_VALUES = {
   ["State Open"] = { key = "stateOpen", default = "" },
   ["State Closed"] = { key = "stateClosed", default = "" },
   ["Payload Press"] = { key = "payloadPress", default = "" },
+  ["Event Type Filter"] = { key = "eventTypeFilter", default = "" },
   ["QoS"] = { key = "qos", default = "0" },
   ["Retain"] = function(item)
     return item.retain and "Yes" or "No"
@@ -511,6 +521,7 @@ local function updateItemConfigProperties()
     isRelay = hasItem and item.itemType == "RELAY",
     isContact = hasItem and item.itemType == "CONTACT",
     isButton = hasItem and item.itemType == "BUTTON",
+    isEvent = hasItem and item.itemType == "EVENT",
     isTemp = isTemp,
     isHumidity = isHumidity,
     isSensor = isTemp or isHumidity,
@@ -790,6 +801,7 @@ end
 OPC.Add_Relay = createAddItemHandler("RELAY", "Add Relay")
 OPC.Add_Contact = createAddItemHandler("CONTACT", "Add Contact")
 OPC.Add_Button = createAddItemHandler("BUTTON", "Add Button")
+OPC.Add_Event = createAddItemHandler("EVENT", "Add Event")
 
 -- Add variable handlers
 OPC.Add_String_Variable = createAddItemHandler("STRING", "Add String Variable")
@@ -871,6 +883,7 @@ OPC.State_Topic = createConfigHandler("stateTopic", { default = "", postUpdate =
 OPC.Payload_On = createConfigHandler("payloadOn", { default = "" })
 OPC.Payload_Off = createConfigHandler("payloadOff", { default = "" })
 OPC.Payload_Press = createConfigHandler("payloadPress", { default = "" })
+OPC.Event_Type_Filter = createConfigHandler("eventTypeFilter", { default = "" })
 OPC.Optimistic = createConfigHandler("optimistic", { default = "Auto" })
 OPC.QoS = createConfigHandler("qos", { default = "0" })
 OPC.Retain = createConfigHandler("retain", {

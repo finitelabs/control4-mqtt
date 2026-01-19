@@ -161,6 +161,12 @@
         <default/>
         <description>Enter a name to create a new MQTT button (publishes press commands)</description>
       </property>
+      <property>
+        <name>Add Event</name>
+        <type>STRING</type>
+        <default/>
+        <description>Enter a name to create a new MQTT event (triggers BUTTON_LINK on MQTT messages)</description>
+      </property>
       <!-- Add Variables Section -->
       <property>
         <name>Add Variables</name>
@@ -319,6 +325,13 @@
         <type>STRING</type>
         <default>PRESS</default>
         <description>Payload to send when button is pressed</description>
+      </property>
+      <!-- Event-specific properties -->
+      <property>
+        <name>Event Type Filter</name>
+        <type>STRING</type>
+        <default/>
+        <description>Comma-separated list of event types to accept (e.g., "press,hold"). Leave empty to accept all.</description>
       </property>
       <!-- Common properties -->
       <property>
