@@ -12,6 +12,11 @@
 
 ## Unreleased
 
+### Added
+
+- Added Event entity type to MQTT Universal driver for receiving MQTT events and
+  triggering Control4 buttons/keypads.
+
 ### Changed
 
 - Updated MQTT Broker documentation to include Programming section with events

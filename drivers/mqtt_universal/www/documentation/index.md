@@ -76,6 +76,8 @@ integration with any MQTT-based system.
 - **Contact Sensors** - Create CONTACT_SENSOR bindings for open/closed state
 - **Buttons** - Publish press commands to MQTT topics, with optional keypad
   linking
+- **Events** - Create BUTTON_LINK bindings that trigger on MQTT messages, for
+  keypad integration
 
 **Variables:**
 
@@ -198,6 +200,11 @@ binding that reports OPEN or CLOSED state based on MQTT messages.
 Enter a name to create a new button. Buttons publish a configured payload to an
 MQTT topic when triggered via the Press command.
 
+##### Add Event
+
+Enter a name to create a new event. Events subscribe to MQTT topics and trigger
+connected Control4 buttons/keypads when messages arrive.
+
 #### Add Variables
 
 ##### Add String Variable
@@ -285,6 +292,13 @@ These appear when a button is selected:
 
 - **Payload Press** - Payload to send when pressed (default: `PRESS`)
 
+g##### Event-Specific Properties
+
+These appear when an event is selected:
+
+- **Event Type Filter** - Comma-separated list of event types to accept (e.g.,
+  "press,hold"). Leave empty to accept all.
+
 ##### JSONPath Properties
 
 These properties appear when a State Topic is configured:
@@ -325,7 +339,9 @@ are created that appear in the Connections tab:
 
 - **Relays** create RELAY bindings
 - **Contacts** create CONTACT_SENSOR bindings
-- **Buttons** create BUTTON_LINK bindings (for keypad integration)
+- **Buttons** create BUTTON_LINK bindings (provider, for sending commands to
+  MQTT)
+- **Events** create BUTTON_LINK bindings (consumer, for triggering keypads)
 - **Temperature variables** create TEMPERATURE_VALUE bindings
 - **Humidity variables** create HUMIDITY_VALUE bindings
 
@@ -338,6 +354,8 @@ panels, keypads, etc.) or used directly in programming.
 
 - **Device Available** - Fires when availability payload is received
 - **Device Unavailable** - Fires when not-available payload is received
+- **{Event Name} Triggered** - Fires when an event item receives a matching MQTT
+  message
 
 **Conditionals:**
 
