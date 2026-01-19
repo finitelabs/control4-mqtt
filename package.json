@@ -1,12 +1,9 @@
 {
   "config": {
     "distributions": "drivercentral oss",
-    "drivers": "mqtt_contact mqtt_broker mqtt_button mqtt_switch mqtt_universal",
+    "drivers": "mqtt_broker mqtt_universal",
     "driver_names": {
-      "mqtt_contact": "MQTT Contact",
       "mqtt_broker": "MQTT Broker",
-      "mqtt_button": "MQTT Button",
-      "mqtt_switch": "MQTT Switch",
       "mqtt_universal": "MQTT Universal"
     }
   },
