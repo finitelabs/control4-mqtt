@@ -10,7 +10,7 @@
 [//]: # "### Removed"
 [//]: # "- Removed"
 
-## Unreleased
+## v20260119 - 2026-01-19
 
 ### Added
 
@@ -23,6 +23,10 @@
   and conditionals.
 - Updated MQTT Universal documentation to include missing read-only properties
   and BUTTON_LINK binding information.
+
+### Removed
+
+- Removed deprecated MQTT Switch, MQTT Contact, and MQTT Button drivers.
 
 ## v20260117 - 2026-01-17
 
