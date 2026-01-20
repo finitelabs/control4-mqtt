@@ -61,6 +61,8 @@ local PROXY_BINDING_END = 5999
 --- @field provider boolean
 --- @field displayName string
 --- @field class string
+--- @field _boundDeviceId number|nil The other device ID in the connection (for restore)
+--- @field _boundBindingId number|nil The other binding ID in the connection (for restore)
 
 --- Creates a new Bindings instance.
 --- @return Bindings bindings A new Bindings instance.
@@ -115,6 +117,14 @@ function Bindings:getOrAddDynamicBinding(namespace, key, type, provider, display
     self:_saveBindings(bindings)
     C4:AddDynamicBinding(bindingId, type, provider, displayName, class, false, false)
   end
+
+  -- Set default OBC handler if not already set
+  if OBC[binding.bindingId] == nil then
+    OBC[binding.bindingId] = function(idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
+      self:onBindingChanged(namespace, key, idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
+    end
+  end
+
   return binding
 end
 
@@ -137,6 +147,70 @@ function Bindings:getDynamicBindings(namespace)
   local bindings = self:getBindings()
   --- @type table<string, Binding>
   return Select(bindings, namespace) or {}
+end
+
+--- Saves the connection info for a binding (used for consumer binding restore).
+--- @param namespace string The namespace of the binding.
+--- @param key string The key of the binding.
+--- @param boundDeviceId number The other device ID in the connection.
+--- @param boundBindingId number The other binding ID in the connection.
+function Bindings:saveConnection(namespace, key, boundDeviceId, boundBindingId)
+  log:trace("Bindings:saveConnection(%s, %s, %s, %s)", namespace, key, boundDeviceId, boundBindingId)
+  local bindings = self:getBindings()
+  local binding = Select(bindings, namespace, key)
+  if binding then
+    binding._boundDeviceId = boundDeviceId
+    binding._boundBindingId = boundBindingId
+    self:_saveBindings(bindings)
+    log:debug(
+      "Saved connection for binding '%s': device=%s, binding=%s",
+      binding.displayName,
+      boundDeviceId,
+      boundBindingId
+    )
+  end
+end
+
+--- Clears the connection info for a binding.
+--- @param namespace string The namespace of the binding.
+--- @param key string The key of the binding.
+function Bindings:clearConnection(namespace, key)
+  log:trace("Bindings:clearConnection(%s, %s)", namespace, key)
+  local bindings = self:getBindings()
+  local binding = Select(bindings, namespace, key)
+  if binding then
+    binding._boundDeviceId = nil
+    binding._boundBindingId = nil
+    self:_saveBindings(bindings)
+    log:debug("Cleared connection for binding '%s'", binding.displayName)
+  end
+end
+
+--- Handle binding changed events. Saves/clears connection info for consumer bindings.
+--- Can be called from custom OBC handlers to preserve connection tracking.
+--- @param namespace string The namespace of the binding.
+--- @param key string The key of the binding.
+--- @param idBinding number The binding ID.
+--- @param strClass string The binding class.
+--- @param bIsBound boolean Whether the binding is bound.
+--- @param otherDeviceId number|nil The other device ID in the connection.
+--- @param otherBindingId number|nil The other binding ID in the connection.
+function Bindings:onBindingChanged(namespace, key, idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
+  log:trace(
+    "Bindings:onBindingChanged(%s, %s, %s, %s, %s, %s, %s)",
+    namespace,
+    key,
+    idBinding,
+    strClass,
+    bIsBound,
+    otherDeviceId,
+    otherBindingId
+  )
+  if bIsBound and otherDeviceId and otherBindingId then
+    self:saveConnection(namespace, key, otherDeviceId, otherBindingId)
+  elseif not bIsBound then
+    self:clearConnection(namespace, key)
+  end
 end
 
 --- Deletes a dynamic binding by namespace and key.
@@ -179,9 +253,12 @@ end
 
 --- Restores all dynamic bindings from persistent storage. Ensures that all
 --- bindings are re-added and removes unknown bindings within managed ranges.
+--- For consumer bindings with saved connection info, restores the connection via Bind().
 function Bindings:restoreBindings()
   log:trace("Binding:restoreBindings()")
   local deviceBindings = GetDeviceBindings(C4:GetDeviceID())
+  local consumerBindingsToRestore = {}
+
   for _, keys in pairs(self:getBindings()) do
     for _, binding in pairs(keys) do
       deviceBindings[binding.bindingId] = nil
@@ -195,8 +272,14 @@ function Bindings:restoreBindings()
         false,
         false
       )
+
+      -- Track consumer bindings with saved connection info for deferred restore
+      if not binding.provider and binding._boundDeviceId and binding._boundBindingId then
+        table.insert(consumerBindingsToRestore, binding)
+      end
     end
   end
+
   -- Only remove unknown bindings that are within our managed ranges
   -- This preserves static bindings defined in driver.xml
   for bindingId, _ in pairs(deviceBindings) do
@@ -204,6 +287,18 @@ function Bindings:restoreBindings()
       log:debug("Deleting unknown binding %s", bindingId)
       C4:RemoveDynamicBinding(bindingId)
     end
+  end
+
+  -- Restore consumer binding connections after all bindings are created
+  local myDeviceId = C4:GetDeviceID()
+  for _, binding in ipairs(consumerBindingsToRestore) do
+    log:info(
+      "Restoring connection for consumer binding '%s': provider device=%s, provider binding=%s",
+      binding.displayName,
+      binding._boundDeviceId,
+      binding._boundBindingId
+    )
+    Bind(binding._boundDeviceId, binding._boundBindingId, myDeviceId, binding.bindingId, binding.class)
   end
 end
 
