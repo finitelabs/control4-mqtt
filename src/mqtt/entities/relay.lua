@@ -180,8 +180,19 @@ function MqttRelay:registerBinding()
   end
 
   -- Register OBC handler for binding changes
-  OBC[binding.bindingId] = function(idBinding, _strClass, bIsBound, otherDeviceId, _otherBindingId)
+  OBC[binding.bindingId] = function(idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
     log:debug("OBC[%s] bIsBound=%s otherDeviceId=%s", idBinding, bIsBound, otherDeviceId)
+    -- Preserve connection info for restore
+    bindings:onBindingChanged(
+      entity.BINDINGS_NAMESPACE,
+      entity:getBindingKey(),
+      idBinding,
+      strClass,
+      bIsBound,
+      otherDeviceId,
+      otherBindingId
+    )
+    -- Send current state to newly bound device
     if bIsBound and entity._state ~= nil then
       local bindingState = entity._state and "CLOSED" or "OPENED"
       SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")

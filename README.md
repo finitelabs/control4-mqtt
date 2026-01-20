@@ -182,6 +182,15 @@ Control4, you can file an issue on GitHub:
 
 # <span style="color:#660066">Changelog</span>
 
+## Unreleased
+
+### Fixed
+
+- Fixed consumer bindings (e.g., BUTTON_LINK for Event entities) not
+  restoring their connections on controller reboot. The bindings module
+  now tracks connection info and automatically re-establishes consumer
+  binding connections when bindings are restored.
+
 ## v20260119 - 2026-01-19
 
 ### Added
