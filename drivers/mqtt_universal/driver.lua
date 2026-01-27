@@ -586,8 +586,11 @@ end
 local function restoreItems()
   log:trace("restoreItems()")
 
+  -- First restore values from the values lib
+  values:restoreValues()
+
   -- Create entity instances for all items
-  for _, item in pairs(getItems()) do
+  for itemId, item in pairs(getItems()) do
     local entity = createEntity(item)
     if entity then
       -- Restore binding and handlers
@@ -604,6 +607,9 @@ local function restoreItems()
       entity:recordTopic(item.stateTopic)
     end
   end
+
+  -- Restore bindings
+  bindings:restoreBindings()
 end
 
 -----------------------------------------------------------------------
@@ -634,13 +640,11 @@ function OnDriverLateInit()
   end
   UpdateProperty("Driver Status", "Initializing")
 
-  -- Restore events, values, and bindings from persistent storage
-  events:restoreEvents()
-  values:restoreValues()
-  bindings:restoreBindings()
-
   -- Restore items and their callbacks/bindings
   restoreItems()
+
+  -- Restore dynamic events from persistent storage
+  events:restoreEvents()
 
   -- Fire OnPropertyChanged to set the initial Headers and other Property
   for p, _ in pairs(Properties) do

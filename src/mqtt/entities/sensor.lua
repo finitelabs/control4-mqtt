@@ -157,19 +157,8 @@ function MqttSensor:registerBinding()
   end
 
   -- Register OBC handler for binding changes
-  OBC[binding.bindingId] = function(idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
+  OBC[binding.bindingId] = function(idBinding, _strClass, bIsBound, otherDeviceId, _otherBindingId)
     log:debug("OBC[%s] bIsBound=%s otherDeviceId=%s", idBinding, bIsBound, otherDeviceId)
-    -- Preserve connection info for restore
-    bindings:onBindingChanged(
-      entity.BINDINGS_NAMESPACE,
-      entity:getBindingKey(),
-      idBinding,
-      strClass,
-      bIsBound,
-      otherDeviceId,
-      otherBindingId
-    )
-    -- Send current value to newly bound device
     if bIsBound then
       entity:sendValue()
     end

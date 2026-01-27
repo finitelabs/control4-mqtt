@@ -122,19 +122,8 @@ function MqttContact:registerBinding()
   -- Contact sensors are read-only, no RFP handler needed
   -- Register OBC handler for binding changes
   local entity = self
-  OBC[binding.bindingId] = function(idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
+  OBC[binding.bindingId] = function(idBinding, _strClass, bIsBound, otherDeviceId, _otherBindingId)
     log:debug("OBC[%s] bIsBound=%s otherDeviceId=%s", idBinding, bIsBound, otherDeviceId)
-    -- Preserve connection info for restore
-    bindings:onBindingChanged(
-      entity.BINDINGS_NAMESPACE,
-      entity:getBindingKey(),
-      idBinding,
-      strClass,
-      bIsBound,
-      otherDeviceId,
-      otherBindingId
-    )
-    -- Send current state to newly bound device
     if bIsBound and entity._state ~= nil then
       local bindingState = entity._state and "OPENED" or "CLOSED"
       SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
