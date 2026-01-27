@@ -182,6 +182,12 @@ Control4, you can file an issue on GitHub:
 
 # <span style="color:#660066">Changelog</span>
 
+## Unreleased
+
+### Fixed
+
+- Fixed incorrect DriverCentral product ID in MQTT Universal driver.
+
 ## v20260120 - 2026-01-20
 
 ### Fixed

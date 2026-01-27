@@ -10,6 +10,12 @@
 [//]: # "### Removed"
 [//]: # "- Removed"
 
+## Unreleased
+
+### Fixed
+
+- Fixed incorrect DriverCentral product ID in MQTT Universal driver.
+
 ## v20260120 - 2026-01-20
 
 ### Fixed
@@ -38,7 +44,7 @@
 - Removed deprecated MQTT Switch, MQTT Contact, and MQTT Button drivers.
 
 ## v20260117 - 2026-01-17
- 
+
 ### Added
 
 - Added the MQTT Universal driver for managing multiple MQTT devices from a
@@ -50,7 +56,7 @@
   - JSONPath value extraction for complex JSON payloads
 - Added "Broker Connected" conditional and events to the MQTT Broker driver.
 
- ### Deprecated
+### Deprecated
 
 - Deprecated the MQTT Switch, MQTT Contact, and MQTT Button drivers. Use MQTT
   Universal instead. This is the terminal release for these drivers. 
