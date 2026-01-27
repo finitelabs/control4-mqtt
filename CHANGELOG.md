@@ -10,6 +10,12 @@
 [//]: # "### Removed"
 [//]: # "- Removed"
 
+## Unreleased
+
+### Fixed
+
+- Fixed incorrect DriverCentral product ID in MQTT Universal driver.
+
 ## v20260120 - 2026-01-20
 
 ### Fixed
