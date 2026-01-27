@@ -10,7 +10,7 @@
 [//]: # "### Removed"
 [//]: # "- Removed"
 
-## Unreleased
+## v20260120 - 2026-01-27
 
 ### Fixed
 

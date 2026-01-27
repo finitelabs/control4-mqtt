@@ -182,7 +182,7 @@ Control4, you can file an issue on GitHub:
 
 # <span style="color:#660066">Changelog</span>
 
-## Unreleased
+## v20260120 - 2026-01-27
 
 ### Fixed
 
