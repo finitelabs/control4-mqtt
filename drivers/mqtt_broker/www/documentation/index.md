@@ -28,8 +28,23 @@
 
 The MQTT Broker driver connects Control4 to an MQTT broker (such as Mosquitto,
 HiveMQ, or other MQTT-compatible platforms). It manages the connection and
-provides pub/sub services to child drivers (switch, button, contact, etc.) that
-connect via the MQTT broker connection binding.
+provides pub/sub services to child drivers that connect via the MQTT broker
+connection binding.
+
+## Driver Suite
+
+The MQTT driver suite consists of two drivers:
+
+| Driver             | Direction | Purpose                                                                                         |
+| ------------------ | --------- | ----------------------------------------------------------------------------------------------- |
+| **MQTT Broker**    | N/A       | Connection management to your MQTT broker                                                       |
+| **MQTT Universal** | Inbound   | External MQTT device -> Control4 (create relays, contacts, buttons, variables from MQTT topics) |
+
+**Typical Setup:**
+
+1. Add the **MQTT Broker** driver and configure your broker connection
+2. Add **MQTT Universal** if you need to bring external MQTT devices into
+   Control4
 
 # <span style="color:#660066">Index</span>
 

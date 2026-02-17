@@ -1,12 +1,13 @@
---- @module "lib.persist"
 --- A persistence utility module for storing and retrieving values with optional encryption.
 --- This module provides a simple key-value store interface with caching capabilities.
+
 local log = require("lib.logging")
 
 --- A utility class for storing and retrieving values from the controller's persistence store.
 --- @class Persist
 --- @field _persist table<string, any> A table to store the cached values.
 local Persist = {}
+Persist.__index = Persist
 
 --- Sentinel representing an empty value in the persistence store.
 --- @type table
@@ -25,13 +26,9 @@ local MIGRATIONS = {}
 --- @return Persist persist A new instance of the Persist class.
 function Persist:new()
   log:trace("Persist:new()")
-  local properties = {
-    _persist = {},
-  }
-  setmetatable(properties, self)
-  self.__index = self
-  --- @cast properties Persist
-  return properties
+  local instance = setmetatable({}, self)
+  instance._persist = {}
+  return instance
 end
 
 --- Retrieves a value from the persistence store.

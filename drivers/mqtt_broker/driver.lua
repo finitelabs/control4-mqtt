@@ -11,10 +11,10 @@ DRIVER_FILENAMES = {
 --#endif
 
 require("lib.utils")
-require("vendor.drivers-common-public.global.handlers")
-require("vendor.drivers-common-public.global.lib")
-require("vendor.drivers-common-public.global.timer")
-require("vendor.drivers-common-public.global.url")
+require("drivers-common-public.global.handlers")
+require("drivers-common-public.global.lib")
+require("drivers-common-public.global.timer")
+require("drivers-common-public.global.url")
 
 local log = require("lib.logging")
 --#ifndef DRIVERCENTRAL
@@ -34,9 +34,37 @@ local lastMessages = {}
 -- Binding ID for the MQTT_BROKER connection
 local MQTT_BROKER_BINDING = 5001
 
+--- Get all MQTT driver instances sorted by device ID
+--- @return integer[] deviceIds Sorted list of device IDs
+local function getMQTTDriverIds()
+  local drivers = C4:GetDevicesByC4iName(C4:GetDriverFileName()) or {}
+  --- @type integer[]
+  local ids = {}
+  for id, _ in pairs(drivers) do
+    table.insert(ids, tointeger(id))
+  end
+  table.sort(ids)
+  return ids
+end
+
+--- Sync a property value to all other MQTT driver instances
+--- Only syncs if the other instance has a different value (avoids infinite loops)
+--- @param propertyName string The property name to sync
+--- @param propertyValue string The property value to sync
+local function syncPropertyToOtherInstances(propertyName, propertyValue)
+  local ids = getMQTTDriverIds()
+  local myId = C4:GetDeviceID()
+  for _, deviceId in ipairs(ids) do
+    if deviceId ~= myId then
+      log:info("Syncing property '%s' = '%s' to device %d", propertyName, propertyValue, deviceId)
+      SetDeviceProperties(deviceId, { [propertyName] = propertyValue }, true)
+    end
+  end
+end
+
 function OnDriverInit()
   --#ifdef DRIVERCENTRAL
-  require("vendor.cloud-client-byte")
+  require("cloud-client-byte")
   C4:AllowExecute(false)
   --#else
   C4:AllowExecute(true)
@@ -53,6 +81,7 @@ function OnDriverLateInit()
   if not CheckMinimumVersion("Driver Status") then
     return
   end
+  isLeaderInstance = Select(getMQTTDriverIds(), 1) == C4:GetDeviceID()
 
   C4:FileSetDir("c29tZXNwZWNpYWxrZXk=++11")
 
@@ -60,13 +89,33 @@ function OnDriverLateInit()
   -- global sets, they'll change if Property is changed.
   for p, _ in pairs(Properties) do
     local status, err = pcall(OnPropertyChanged, p)
-    if not status and err ~= nil then
-      log:error(err)
+    if not status and err then
+      log:error("Error in OnPropertyChanged for property '%s': %s", p, err or "unknown error")
     end
   end
   gInitialized = true
   Connect()
 end
+
+function OPC.Automatic_Updates(propertyValue)
+  log:trace("OPC.Automatic_Updates('%s')", propertyValue)
+  --#ifndef DRIVERCENTRAL
+  if not gInitialized and not isLeaderInstance then
+    return
+  end
+  syncPropertyToOtherInstances("Automatic Updates", propertyValue)
+  --#endif
+end
+
+--#ifndef DRIVERCENTRAL
+function OPC.Update_Channel(propertyValue)
+  log:trace("OPC.Update_Channel('%s')", propertyValue)
+  if not gInitialized and not isLeaderInstance then
+    return
+  end
+  syncPropertyToOtherInstances("Update Channel", propertyValue)
+end
+--#endif
 
 function OPC.Driver_Version(propertyValue)
   log:trace("OPC.Driver_Version('%s')", propertyValue)
@@ -78,6 +127,7 @@ function OPC.Log_Mode(propertyValue)
   log:setLogMode(propertyValue)
   CancelTimer("LogMode")
   if not log:isEnabled() then
+    UpdateProperty("Log Level", "3 - Info", true)
     return
   end
   log:warn("Log mode '%s' will expire in 3 hours", propertyValue)
@@ -85,6 +135,7 @@ function OPC.Log_Mode(propertyValue)
     log:warn("Setting log mode to 'Off' (timer expired)")
     UpdateProperty("Log Mode", "Off", true)
   end)
+  OnPropertyChanged("Log Level")
 end
 
 function OPC.Log_Level(propertyValue)
@@ -95,11 +146,13 @@ function OPC.Log_Level(propertyValue)
     DEBUG_TIMER = true
     DEBUG_RFN = true
     DEBUG_URL = true
+    DEBUG_WEBSOCKET = true
   else
     DEBUGPRINT = false
     DEBUG_TIMER = false
     DEBUG_RFN = false
     DEBUG_URL = false
+    DEBUG_WEBSOCKET = false
   end
 end
 

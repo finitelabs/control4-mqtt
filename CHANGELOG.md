@@ -10,6 +10,20 @@
 [//]: # "### Removed"
 [//]: # "- Removed"
 
+## Unreleased
+
+### Changed
+
+- Broker properties (Automatic Updates, Update Channel) now automatically sync
+  across all MQTT Broker driver instances.
+- Temperature conversions (Fahrenheit/Celsius) now use single decimal precision
+  instead of rounding to the nearest integer or half degree.
+
+### Fixed
+
+- Fixed variable restore order during driver initialization on controller
+  reboot.
+
 ## v20260120 - 2026-01-27
 
 ### Fixed

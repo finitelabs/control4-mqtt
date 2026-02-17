@@ -1,24 +1,25 @@
---- @module "lib.logging"
 --- A logging utility module for managing log levels and output modes.
 
---- @class Log
 --- A logging utility class with support for multiple log levels and output modes.
+--- @class Log
+--- @field _logName string The name of the log.
+--- @field _logLevel integer The current log level.
+--- @field _outputPrint boolean Whether to output logs to print.
+--- @field _outputC4Log boolean Whether to output logs to C4 log.
+--- @field _maxTableLevels integer The maximum depth for table rendering.
 local Log = {}
+Log.__index = Log
 
 --- Creates a new instance of the Log class.
 --- @return Log log A new instance of the Log class.
 function Log:new()
-  local properties = {
-    _logName = "", --- @type string The name of the log.
-    _logLevel = 5, --- @type number The current log level (default is 5).
-    _outputPrint = false, --- @type boolean Whether to output logs to print.
-    _outputC4Log = false, --- @type boolean Whether to output logs to C4 log.
-    _maxTableLevels = 10, --- @type number The maximum depth for table rendering.
-  }
-  setmetatable(properties, self)
-  self.__index = self
-  --- @cast properties Log
-  return properties
+  local instance = setmetatable({}, self)
+  instance._logName = ""
+  instance._logLevel = 5
+  instance._outputPrint = false
+  instance._outputC4Log = false
+  instance._maxTableLevels = 10
+  return instance
 end
 
 --- Sets the name of the log.
@@ -40,13 +41,13 @@ function Log:getLogName()
 end
 
 --- Sets the log level.
---- @param level string|number|nil The log level to set (e.g., 3 or "3 - Info" for INFO).
+--- @param level string|integer|nil The log level to set (e.g., 3 or "3 - Info" for INFO).
 function Log:setLogLevel(level)
   self._logLevel = tonumber(string.sub(level or "", 1, 1)) or self._logLevel
 end
 
 --- Gets the current log level.
---- @return number level The current log level.
+--- @return integer level The current log level.
 function Log:getLogLevel()
   return self._logLevel
 end
@@ -90,7 +91,7 @@ function Log:isC4LogEnabled()
 end
 
 --- Formats and fixes arguments for logging, ensuring they are strings or numbers.
---- @param numArgs number The number of arguments.
+--- @param numArgs integer The number of arguments.
 --- @param args table The arguments to format.
 --- @return table formattedArgs The formatted arguments.
 local function fixFormatArgs(numArgs, args)
@@ -171,21 +172,18 @@ local maxTableLevels = 10
 --- @param tValue table The table to render.
 --- @param tableText? string The current rendered text (optional).
 --- @param sIndent? string The current indentation (optional).
---- @param level? number The current depth level (optional).
+--- @param level? integer The current depth level (optional).
 --- @return string renderedTable The rendered table as a string.
 local function _renderTableAsString(tValue, tableText, sIndent, level)
   tableText = tableText or ""
-  level = (level or 0) + 1
   sIndent = sIndent or ""
+  level = (level or 0) + 1
 
   if level <= maxTableLevels then
     if type(tValue) == "table" then
       for k, v in pairs(tValue) do
-        if tableText == "" then
+        if tableText == "" then --- @diagnostic disable-line: unnecessary-if
           tableText = sIndent .. tostring(k) .. ":  " .. tostring(v)
-          if sIndent == ".   " then
-            sIndent = "    "
-          end
         else
           tableText = tableText .. "\n" .. sIndent .. tostring(k) .. ":  " .. tostring(v)
         end
@@ -206,7 +204,7 @@ end
 --- @param sLogText string The log message.
 --- @return string prefixedLine The log message with prefixes added.
 local function addLinePrefix(sPrefix, sLogText)
-  --- @type table<number, string>
+  --- @type string[]
   local lines = {}
   for s in sLogText:gmatch("[^\r\n]+") do
     table.insert(lines, sPrefix .. s)
@@ -216,15 +214,15 @@ end
 
 --- Logs a message with the specified level.
 --- @private
---- @param level number The log level.
+--- @param level integer The log level.
 --- @param sLogText any The log message.
---- @param numArgs number The number of arguments.
+--- @param numArgs integer The number of arguments.
 --- @param args table The arguments for formatting.
 function Log:_log(level, sLogText, numArgs, args)
   if level == -1 or (self:isEnabled() and self._logLevel >= level) then
     args = fixFormatArgs(numArgs, args)
     if type(sLogText) == "string" then
-      sLogText = string.format(sLogText, unpack(args))
+      sLogText = string.format(sLogText, unpack(args, 1, numArgs))
     end
 
     if type(sLogText) == "table" then
@@ -248,7 +246,7 @@ function Log:_log(level, sLogText, numArgs, args)
 end
 
 --- Gets the prefix for a log level.
---- @param level number The log level.
+--- @param level integer The log level.
 --- @return string prefix The prefix for the log level.
 local function _getLevelPrefix(level)
   local levelNames = {
@@ -266,8 +264,9 @@ end
 
 --- Gets the prefix for print output.
 --- @private
---- @param level number The log level.
+--- @param level integer The log level.
 --- @return string printPrefix The print prefix.
+--- @diagnostic disable-next-line: unused
 function Log:_getPrintPrefix(level)
   --- @diagnostic disable-next-line: missing-parameter
   return os.date() .. " " .. _getLevelPrefix(level)
@@ -275,7 +274,7 @@ end
 
 --- Gets the prefix for C4 log output.
 --- @private
---- @param level number The log level.
+--- @param level integer The log level.
 --- @return string logPrefix The C4 log prefix.
 function Log:_getLogPrefix(level)
   local prefix = ""

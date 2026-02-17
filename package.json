@@ -24,6 +24,7 @@
     "package": "for build in $npm_package_config_distributions; do for dir in $npm_package_config_drivers; do export pwd=\"$(pwd)\" && cd \"build/$build/drivers/$dir\" && \"$pwd/.venv/bin/python3\" \"$pwd/dist/driverpackager/dp3/driverpackager.py\" . \"$pwd/dist/$build\" driver.c4zproj && cd \"$pwd\"; done; done",
     "zip": "for build in $npm_package_config_distributions; do cd \"dist/$build\" && zip $(basename \"$(realpath \"$(pwd)/../../\")\").zip *.{c4z,pdf} && cd ../../; done",
     "build": "npm run fmt && npm run preprocess && npm run update-driver.xml && npm run docs && npm run package && npm run zip",
+    "build:nodocs": "npm run fmt && npm run preprocess && npm run update-driver.xml && npm run package",
     "clean:build": "for build in $npm_package_config_distributions; do rm -rfv \"dist/$build\";done && rm -rfv build",
     "clean": "npm run clean:build && rm -rfv dist node_modules .venv"
   },
