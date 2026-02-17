@@ -1,4 +1,3 @@
---- @module "lib.values"
 --- Values module for managing dynamic values with variable and property support.
 
 local log = require("lib.logging")
@@ -8,6 +7,7 @@ local constants = require("constants")
 --- @class Values
 --- A class representing a collection of named values with optional variable/property support.
 local Values = {}
+Values.__index = Values
 
 --- Persistent storage key for values.
 --- @type string
@@ -21,38 +21,59 @@ end
 --- @class Value
 --- @field index integer Index used for ordering values during restore.
 --- @field varType VariableType? Optional variable type if registered as a variable
---- @field value string|integer|number|nil The stored value
+--- @field value string|integer|number|boolean|nil The stored value
+--- @field suffix string? Optional suffix for property display (e.g., " °C", " %")
 --- @field deleted boolean? If true, the value slot is reserved but the variable is hidden (preserves ID ordering)
 
 --- Creates a new Values instance.
 --- @return Values values A new Values instance.
 function Values:new()
   log:trace("Values:new()")
-  local properties = {}
-  setmetatable(properties, self)
-  self.__index = self
-  --- @cast properties Values
-  return properties
+  local instance = setmetatable({}, self)
+  return instance
 end
 
 --- Updates a value. If the value does not exist, it will be created. If the
 --- `name` is also a property, it will also be updated.
 --- @param name string The name of the value to update or create. Must be globally unique.
---- @param value string|integer|number|nil The value to set, can be `nil`.
+--- @param value string|integer|number|boolean|nil The value to set, can be `nil`.
 --- @param varType VariableType? The type of the variable, if `nil` it will not be registered as a variable.
 --- @param varChangedCallback (fun(newValue: string|integer|number): void)? The callback function to be called when the variable changes.
---- @param propertySuffix string? Optional suffix to append to the property value (e.g., " C" for temperature units).
+--- @param propertySuffix string? Optional suffix to append to the property value (e.g., "°C" for temperature units).
+--- @return boolean changed True if the value changed, false otherwise.
 function Values:update(name, value, varType, varChangedCallback, propertySuffix)
   log:trace("Values:update(%s, %s, %s, %s, %s)", name, value, varType, varChangedCallback, propertySuffix)
-  local values = self:getValues()
-  values[name] = {
-    index = Select(values, name, "index") or self:_getNextValueId(),
-    varType = varType,
-    value = value,
-  }
-  self:_saveValues(values)
 
-  local strValue = tostring(value or "")
+  -- Convert value to appropriate type based on varType
+  if varType == "BOOL" then
+    value = toboolean(value)
+  elseif varType == "DEVICE" or varType == "INT" or varType == "ROOM" then
+    value = tointeger(value)
+  elseif varType == "FLOAT" or varType == "NUMBER" then
+    value = tonumber(value)
+  else
+    value = tostring(value)
+  end
+
+  local values = self:getValues()
+  local existing = values[name]
+
+  -- Check if the entry has changed
+  local changed = not existing
+    or existing.value ~= value
+    or existing.suffix ~= propertySuffix
+    or existing.varType ~= varType
+  if changed then
+    values[name] = {
+      index = Select(values, name, "index") or self:_getNextValueId(),
+      varType = varType,
+      value = value,
+      suffix = propertySuffix,
+    }
+    self:_saveValues(values)
+  end
+
+  local strValue = value == nil and "" or tostring(value)
 
   if varType ~= nil then
     -- Register an OVC handler for this variable if a callback is provided
@@ -86,6 +107,8 @@ function Values:update(name, value, varType, varChangedCallback, propertySuffix)
       UpdateProperty(name, propValue, true)
     end
   end
+
+  return changed
 end
 
 --- Deletes a value. The value is marked as deleted to preserve its index slot
@@ -127,6 +150,7 @@ end
 
 --- Retrieves all values from persistent storage.
 --- @return table<string, Value> values A table of all values mapped by their name.
+--- @diagnostic disable-next-line: unused
 function Values:getValues()
   log:trace("Values:getValues()")
   return persist:get(VALUES_PERSIST_KEY, {}) or {}
@@ -166,7 +190,7 @@ function Values:restoreValues()
       C4:AddVariable(entry.name, "", entry.data.varType or "STRING", true, true)
     else
       log:debug("Restoring %s value %s at index %d", entry.data.varType, entry.name, entry.data.index)
-      self:update(entry.name, entry.data.value, entry.data.varType, nil)
+      self:update(entry.name, entry.data.value, entry.data.varType, nil, entry.data.suffix)
     end
   end
 end
@@ -174,6 +198,7 @@ end
 --- Saves the values to persistent storage.
 --- @private
 --- @param values table<string, Value>? The values table to save, nil clears storage.
+--- @diagnostic disable-next-line: unused
 function Values:_saveValues(values)
   log:trace("Values:_saveValues(%s)", values)
   persist:set(VALUES_PERSIST_KEY, not IsEmpty(values) and values or nil)
@@ -201,6 +226,7 @@ end
 --- @private
 --- @param values table<string, Value> The values table to trim.
 --- @return table<string, Value> The trimmed values table.
+--- @diagnostic disable-next-line: unused
 function Values:_trimDeletedTail(values)
   -- Find the maximum index among non-deleted entries
   local maxActiveIndex = 0

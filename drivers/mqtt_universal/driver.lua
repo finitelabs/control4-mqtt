@@ -12,9 +12,9 @@ DC_X = nil
 DC_FILENAME = "mqtt_universal.c4z"
 --#endif
 require("lib.utils")
-require("vendor.drivers-common-public.global.handlers")
-require("vendor.drivers-common-public.global.lib")
-require("vendor.drivers-common-public.global.timer")
+require("drivers-common-public.global.handlers")
+require("drivers-common-public.global.lib")
+require("drivers-common-public.global.timer")
 
 local bindings = require("lib.bindings")
 local events = require("lib.events")
@@ -586,9 +586,6 @@ end
 local function restoreItems()
   log:trace("restoreItems()")
 
-  -- First restore values from the values lib
-  values:restoreValues()
-
   -- Create entity instances for all items
   for itemId, item in pairs(getItems()) do
     local entity = createEntity(item)
@@ -607,9 +604,6 @@ local function restoreItems()
       entity:recordTopic(item.stateTopic)
     end
   end
-
-  -- Restore bindings
-  bindings:restoreBindings()
 end
 
 -----------------------------------------------------------------------
@@ -618,7 +612,7 @@ end
 
 function OnDriverInit()
   --#ifdef DRIVERCENTRAL
-  require("vendor.cloud-client-byte")
+  require("cloud-client-byte")
   C4:AllowExecute(false)
   --#else
   C4:AllowExecute(true)
@@ -647,9 +641,6 @@ function OnDriverLateInit()
 
   -- Restore items and their callbacks/bindings
   restoreItems()
-
-  -- Restore dynamic events from persistent storage
-  events:restoreEvents()
 
   -- Fire OnPropertyChanged to set the initial Headers and other Property
   for p, _ in pairs(Properties) do

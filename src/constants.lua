@@ -1,4 +1,3 @@
---- @module "constants"
 --- Constants used throughout the MQTT driver.
 
 return {
