@@ -1,8 +1,9 @@
 {
   "config": {
     "distributions": "drivercentral oss",
-    "drivers": "mqtt_broker mqtt_universal",
+    "drivers": "mqtt_bridge mqtt_broker mqtt_universal",
     "driver_names": {
+      "mqtt_bridge": "MQTT Bridge",
       "mqtt_broker": "MQTT Broker",
       "mqtt_universal": "MQTT Universal"
     }

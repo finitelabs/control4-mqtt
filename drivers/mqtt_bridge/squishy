@@ -1,0 +1,41 @@
+Main "driver.lua"
+
+#ifdef DRIVERCENTRAL
+Module "cloud-client-byte" "../../vendor/cloud-client-byte.lua"
+#endif
+Module "deferred" "../../vendor/deferred.lua"
+Module "drivers-common-public.global.handlers" "../../vendor/drivers-common-public/global/handlers.lua"
+Module "drivers-common-public.global.lib" "../../vendor/drivers-common-public/global/lib.lua"
+Module "drivers-common-public.global.timer" "../../vendor/drivers-common-public/global/timer.lua"
+Module "drivers-common-public.global.url" "../../vendor/drivers-common-public/global/url.lua"
+Module "JSON" "../../vendor/JSON.lua"
+Module "version" "../../vendor/version.lua"
+Module "xml.xml2lua" "../../vendor/xml/xml2lua.lua"
+Module "xml.xmlhandler.dom" "../../vendor/xml/xmlhandler/dom.lua"
+Module "xml.xmlhandler.print" "../../vendor/xml/xmlhandler/print.lua"
+Module "xml.xmlhandler.tree" "../../vendor/xml/xmlhandler/tree.lua"
+Module "xml.XmlParser" "../../vendor/xml/XmlParser.lua"
+
+Module "lib.bindings" "../../src/lib/bindings.lua"
+Module "lib.conditionals" "../../src/lib/conditionals.lua"
+Module "lib.events" "../../src/lib/events.lua"
+#ifndef DRIVERCENTRAL
+Module "lib.github-updater" "../../src/lib/github-updater.lua"
+#endif
+Module "lib.http" "../../src/lib/http.lua"
+Module "lib.logging" "../../src/lib/logging.lua"
+Module "lib.persist" "../../src/lib/persist.lua"
+Module "lib.utils" "../../src/lib/utils.lua"
+Module "lib.values" "../../src/lib/values.lua"
+
+Module "constants" "../../src/constants.lua"
+
+#ifdef DRIVERCENTRAL
+Output "../../../../dist/drivercentral/mqtt_bridge.lua"
+#else
+Output "../../../../dist/oss/mqtt_bridge.lua"
+#endif
+Option "minify" "true"
+Option "minify_level" "none"
+Option "minify_comments" "true"
+Option "minify_emptylines" "true"

@@ -10,6 +10,18 @@
 [//]: # "### Removed"
 [//]: # "- Removed"
 
+## Unreleased
+
+### Added
+
+- Added the MQTT Bridge driver for bridging Control4 devices to MQTT. This
+  allows external systems like Home Assistant to monitor and control C4 devices.
+  Currently supports lights/dimmers with features including:
+    - Real-time state publishing as devices change
+    - Command handling for external control
+    - Device metadata (name, room, type) for easy integration
+    - Retained messages for state persistence
+
 ## v20260217 - 2026-02-17
 
 ### Changed

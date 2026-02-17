@@ -1,0 +1,151 @@
+<devicedata>
+  <name>MQTT Bridge</name>
+  <version/>
+  <manufacturer>Finite Labs</manufacturer>
+  <model>MQTT Bridge</model>
+  <creator>Derek Miller</creator>
+  <small image_source="c4z">icons/device_sm.png</small>
+  <large image_source="c4z">icons/device_lg.png</large>
+  <control>lua_gen</control>
+  <driver>DriverWorks</driver>
+  <copyright>Copyright 2026 Finite Labs, LLC. All rights reserved.</copyright>
+  <created>02/04/2026 12:00:00 PM</created>
+  <modified/>
+  <combo>true</combo>
+  <minimum_os_version>3.3.0</minimum_os_version>
+  <composer_categories>
+    <category>Misc</category>
+  </composer_categories>
+  <conditionals/>
+  <events/>
+  <config>
+    <script file="driver.lua" jit="1"/>
+    <documentation file="www/documentation/index.html"/>
+    <properties>
+      <!-- #ifdef DRIVERCENTRAL -->
+      <property>
+        <name>Cloud Settings</name>
+        <type>LABEL</type>
+        <default>Cloud Settings</default>
+      </property>
+      <property>
+        <name>Cloud Status</name>
+        <default/>
+        <type>STRING</type>
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Automatic Updates</name>
+        <type>LIST</type>
+        <items>
+          <item>Off</item>
+          <item>On</item>
+        </items>
+        <default>On</default>
+      </property>
+      <!-- #endif -->
+      <property>
+        <name>Driver Settings</name>
+        <type>LABEL</type>
+        <default>Driver Settings</default>
+      </property>
+      <property>
+        <name>Driver Status</name>
+        <type>STRING</type>
+        <default/>
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Driver Version</name>
+        <type>STRING</type>
+        <default/>
+        <readonly>true</readonly>
+      </property>
+      <property>
+        <name>Log Level</name>
+        <type>LIST</type>
+        <default>3 - Info</default>
+        <items>
+          <item>0 - Fatal</item>
+          <item>1 - Error</item>
+          <item>2 - Warning</item>
+          <item>3 - Info</item>
+          <item>4 - Debug</item>
+          <item>5 - Trace</item>
+          <item>6 - Ultra</item>
+        </items>
+      </property>
+      <property>
+        <name>Log Mode</name>
+        <type>LIST</type>
+        <default>Off</default>
+        <items>
+          <item>Off</item>
+          <item>Print</item>
+          <item>Log</item>
+          <item>Print and Log</item>
+        </items>
+      </property>
+      <!-- MQTT Settings -->
+      <property>
+        <name>MQTT Settings</name>
+        <type>LABEL</type>
+        <default>MQTT Settings</default>
+      </property>
+      <property>
+        <name>Topic Prefix</name>
+        <type>STRING</type>
+        <default>c4</default>
+        <description>Base topic prefix (e.g., c4). Device type is added automatically.</description>
+      </property>
+      <property>
+        <name>QoS</name>
+        <type>LIST</type>
+        <default>0</default>
+        <items>
+          <item>0</item>
+          <item>1</item>
+          <item>2</item>
+        </items>
+        <description>MQTT Quality of Service level</description>
+      </property>
+      <!-- Device Selection -->
+      <property>
+        <name>Device Selection</name>
+        <type>LABEL</type>
+        <default>Device Selection</default>
+      </property>
+      <property>
+        <name>Select Lights</name>
+        <type>DEVICE_SELECTOR</type>
+        <items>
+          <item>light.c4i</item>
+          <item>light_v2.c4i</item>
+        </items>
+        <multiselect>true</multiselect>
+        <tooltip>Select lights to expose to MQTT</tooltip>
+      </property>
+    </properties>
+    <commands/>
+  </config>
+  <capabilities/>
+  <connections>
+    <connection>
+      <id>5001</id>
+      <facing>6</facing>
+      <connectionname>MQTT Broker</connectionname>
+      <type>2</type>
+      <consumer>True</consumer>
+      <audiosource>False</audiosource>
+      <videosource>False</videosource>
+      <linelevel>False</linelevel>
+      <classes>
+        <class>
+          <classname>MQTT_BROKER</classname>
+          <autobind>True</autobind>
+        </class>
+      </classes>
+      <hidden>False</hidden>
+    </connection>
+  </connections>
+</devicedata>

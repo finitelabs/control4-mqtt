@@ -14,18 +14,21 @@ via the MQTT broker connection binding.
 
 ## Driver Suite
 
-The MQTT driver suite consists of two drivers:
+The MQTT driver suite consists of three drivers:
 
 | Driver | Direction | Purpose |
 |----|----|----|
 | **MQTT Broker** | N/A | Connection management to your MQTT broker |
-| **MQTT Universal** | Inbound | External MQTT device -\> Control4 (create relays, contacts, buttons, variables from MQTT topics) |
+| **MQTT Universal** | Inbound | External MQTT → Control4 (create relays, contacts, buttons, variables from MQTT topics) |
+| **MQTT Bridge** | Outbound | Control4 → External MQTT (bridge C4 devices to MQTT for monitoring and control) |
 
 **Typical Setup:**
 
 1.  Add the **MQTT Broker** driver and configure your broker connection
 2.  Add **MQTT Universal** if you need to bring external MQTT devices
     into Control4
+3.  Add **MQTT Bridge** if you want to bridge Control4 devices to
+    external systems
 
 # <span style="color:#660066">Index</span>
 
@@ -195,6 +198,19 @@ Control4, you can file an issue on GitHub:
 <div style="page-break-after: always"></div>
 
 # <span style="color:#660066">Changelog</span>
+
+## Unreleased
+
+### Added
+
+- Added the MQTT Bridge driver for bridging Control4 devices to MQTT.
+  This allows external systems like Home Assistant to monitor and
+  control C4 devices. Currently supports lights/dimmers with features
+  including:
+  - Real-time state publishing as devices change
+  - Command handling for external control
+  - Device metadata (name, room, type) for easy integration
+  - Retained messages for state persistence
 
 ## v20260217 - 2026-02-17
 
