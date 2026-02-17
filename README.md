@@ -196,7 +196,19 @@ Control4, you can file an issue on GitHub:
 
 # <span style="color:#660066">Changelog</span>
 
-## Unreleased
+## v20260217 - 2026-02-17
+
+### Changed
+
+- Broker properties (Automatic Updates, Update Channel) now
+  automatically sync across all MQTT Broker driver instances.
+- Temperature conversions (Fahrenheit/Celsius) now use single decimal
+  precision instead of rounding to the nearest integer or half degree.
+
+### Fixed
+
+- Fixed variable restore order during driver initialization on
+  controller reboot.
 
 ## v20260120 - 2026-01-27
 
