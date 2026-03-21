@@ -1,0 +1,11 @@
+# Changes here will be overwritten by Copier
+_commit: 97ff8d0e4a26add83621232c73989a9fe12e2f63
+_src_path: git@github.com:finitelabs/control4-driver-template.git
+project_name: control4-mqtt
+project_description: MQTT integration for Control4
+github_org: finitelabs
+distributions: drivercentral oss
+has_github_updater: true
+has_tests: false
+readme_driver_slug: mqtt_broker
+readme_build: oss
