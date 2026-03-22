@@ -1,5 +1,27 @@
 --- A persistence utility module for storing and retrieving values with optional encryption.
 --- This module provides a simple key-value store interface with caching capabilities.
+---
+--- ## Migrations
+---
+--- Persist supports one-time data migrations between driver versions. This is useful when the
+--- structure of persisted data needs to change (e.g., converting integer keys to string keys).
+---
+--- To define migrations, create a `src/migrations.lua` file that returns a table mapping persist
+--- keys to migration functions:
+---
+--- ```lua
+--- -- src/migrations.lua
+--- return {
+---   ["MyData"] = function(value)
+---     -- transform value from old format to new format
+---     return transformedValue
+---   end,
+--- }
+--- ```
+---
+--- Migrations are loaded automatically on the first `get()` call via `pcall(require, "migrations")`.
+--- Each migration runs once per key, transforms the value, persists the result, and removes itself.
+--- If no `migrations.lua` file exists, persist operates normally with no migrations.
 
 local log = require("lib.logging")
 
@@ -13,14 +35,15 @@ Persist.__index = Persist
 --- @type table
 local EMPTY = {}
 
---- Migrate data during first retrieval. Helpful in cases where you wish to change structure of data
---- between driver versions.
---- This map is of the form:
---- {
----   "key": function(value) -> newValue
---- }
+--- Migration functions loaded from the driver's `migrations.lua` module.
+--- Populated lazily on first get() call. Each entry maps a persist key to a function that
+--- transforms the old value format into the new format.
 --- @type table<string, fun(value: any): any>
 local MIGRATIONS = {}
+
+--- Whether migrations have been loaded from the driver's migrations module.
+--- @type boolean
+local migrationsLoaded = false
 
 --- Creates a new instance of the Persist class.
 --- @return Persist persist A new instance of the Persist class.
@@ -31,13 +54,33 @@ function Persist:new()
   return instance
 end
 
+--- Loads driver-specific migrations from `migrations.lua` if present.
+--- Called automatically on first get(). Safe to call multiple times (no-op after first call).
+--- @private
+local function loadMigrations()
+  if migrationsLoaded then
+    return
+  end
+  migrationsLoaded = true
+  local ok, m = pcall(require, "migrations")
+  if ok and type(m) == "table" then
+    for key, fn in pairs(m) do
+      MIGRATIONS[key] = fn
+    end
+  end
+end
+
 --- Retrieves a value from the persistence store.
+--- On first call, loads any driver-specific migrations from `migrations.lua`.
+--- If a migration exists for the requested key, it runs once, persists the transformed value,
+--- and removes itself.
 --- @param key string The key to retrieve the value for.
 --- @param default? any The default value to return if the key doesn't exist (optional).
 --- @param encrypted? boolean Whether the value is encrypted (optional).
 --- @return any value The retrieved value, or the default if the key doesn't exist.
 function Persist:get(key, default, encrypted)
   log:trace("Persist:get(%s, %s, %s)", key, default, encrypted)
+  loadMigrations()
   local value = self:_get(key, default, encrypted)
 
   if type(MIGRATIONS[key]) == "function" then

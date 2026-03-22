@@ -3,8 +3,11 @@
 local deferred = require("deferred")
 
 local log = require("lib.logging")
+local lru = require("lib.lru")
 
 local constants = require("constants")
+
+--- @alias DeviceId integer|string
 
 do
   --- @type table<string, fun(paramName: string): string[]>
@@ -32,13 +35,18 @@ function GetCommandParamList(commandName, paramName)
   local success, ret
 
   if GCPL and GCPL[commandName] and type(GCPL[commandName]) == "function" then
-    success, ret = pcall(GCPL[commandName], paramName)
+    success, ret = xpcall(function()
+      return GCPL[commandName](paramName)
+    end, debug.traceback)
   end
 
   if success == true then
     return ret
   elseif success == false then
     print("GetCommandParamList error: ", ret, commandName, paramName)
+    if ON_HANDLER_ERROR then
+      ON_HANDLER_ERROR("GCPL." .. commandName, ret)
+    end
   end
 end
 
@@ -102,7 +110,7 @@ local function C4Call(methodName, ...)
 end
 
 --- Sends a Control4 CommandMessage to a specified Control4 device driver.
---- @param deviceId number|string The ID of the driver to send the command to.
+--- @param deviceId DeviceId The ID of the driver to send the command to.
 --- @param strCommand string The command to send.
 --- @param tParams table A table containing parameters for the command.
 --- @param allowEmptyValues? boolean Allows empty strings as parameter values (optional). Defaults to false.
@@ -130,12 +138,114 @@ function SendToNetwork(idBinding, nPort, strData)
 end
 
 --- Sends a UI Request to another driver.
---- @param id number The ID of the driver receiving the request.
+--- @param id DeviceId The ID of the driver receiving the request.
 --- @param request string The request to send.
 --- @param tParams table A table of parameters to send with the request. Use `{}` if no parameters.
 --- @return string response The response to the request in XML format.
 function SendUIRequest(id, request, tParams)
   return C4Call("SendUIRequest", id, request, tParams)
+end
+
+--- @type LRUCache<string,ExtendedDeviceDefinition|nil>
+local devicesCache = lru:new(1000, 180)
+
+--- @type LRUCache<string,table|nil>
+local devicesDataCache = lru:new(1000, 180)
+
+--- @type LRUCache<string,integer|nil>
+local agentIdCache = lru:new(1000, 180)
+
+--- Clears the specific device ID from the cache.
+--- @param deviceId DeviceId The ID of the device to clear from the cache.
+function DeviceUpdated(deviceId)
+  log:trace("DeviceUpdated(%s)", deviceId)
+  devicesCache:remove(tostring(deviceId))
+  devicesDataCache:remove(tostring(deviceId))
+end
+
+--- @class ExtendedDeviceDefinition
+--- @field driverFileName string
+--- @field deviceName string
+--- @field roomId string
+--- @field roomName string
+--- @field protocol? table<number, ProtocolDefinition>
+--- @field deviceId DeviceId
+--- @field displayName string
+--- @field ignoreRoomName? boolean Whether to ignore the room name prefix for this device.
+
+--- Retrieves an extended device definition by device ID.
+--- @param deviceId DeviceId|nil The ID of the device.
+--- @param c4iNames? string[]|string List of C4i names to filter results.
+--- @return ExtendedDeviceDefinition|nil device The device definition if found; else nil.
+function GetDevice(deviceId, c4iNames)
+  log:trace("GetDevice(%s, %s)", deviceId, c4iNames)
+  return devicesCache:getOrSet(tostring(deviceId), function()
+    local deviceIdInt = tointeger(deviceId)
+    if deviceIdInt == nil or deviceIdInt < 1 then
+      return nil
+    end
+    --- @type DeviceFilter
+    local tFilter = { DeviceIds = tostring(deviceIdInt) }
+    if not IsEmpty(c4iNames) then
+      --- @cast c4iNames -nil
+      if IsList(c4iNames) then
+        --- @cast c4iNames string[]
+        c4iNames = table.concat(c4iNames, ",")
+      end
+      --- @cast c4iNames -string[]
+      tFilter.C4iNames = c4iNames
+    end
+    local device = C4:GetDevices(tFilter)[deviceIdInt]
+    if device == nil then
+      -- Make a synthetic device for a room
+      local deviceName = C4:GetDeviceDisplayName(deviceIdInt)
+      if not IsEmpty(deviceName) then
+        --- @type ExtendedDeviceDefinition
+        device = {
+          roomId = tostring(deviceIdInt),
+          roomName = deviceName,
+          deviceName = deviceName,
+          driverFileName = "roomdevice.c4i",
+        }
+      else
+        log:warn("GetDevice -> Unknown device %s", deviceIdInt)
+        return nil
+      end
+    end
+    local displayName = device.deviceName
+    if not IsEmpty(device.roomName) then
+      displayName = string.format("%s > %s", device.roomName, device.deviceName)
+    end
+    --- @type ExtendedDeviceDefinition
+    return {
+      driverFileName = device.driverFileName,
+      deviceName = device.deviceName,
+      roomId = device.roomId,
+      roomName = device.roomName,
+      protocol = device.protocol,
+      -- Extended fields
+      deviceId = deviceIdInt,
+      displayName = displayName,
+    }
+  end)
+end
+
+--- Retrieves device data for a given device ID and specified properties.
+--- @param deviceId DeviceId The ID of the device to retrieve data for.
+--- @param ... string? Nested keys to retrieve specific properties from the device data.
+--- @return table data
+function GetDeviceData(deviceId, ...)
+  log:trace("GetDeviceData(%s, %s)", deviceId, table.concat({ ... }, ","))
+  local deviceIdInt = tointeger(deviceId)
+  if deviceIdInt == nil then
+    return {}
+  end
+  return Select(
+    devicesDataCache:getOrSet(tostring(deviceId), function()
+      return ParseXml(C4:GetDeviceData(deviceIdInt))
+    end),
+    unpack({ ... })
+  )
 end
 
 --- Retrieves the bindings for a given device, optionally filtered by type, provider, display name, and class.
@@ -175,8 +285,27 @@ function GetDeviceBindings(deviceId, typeFilter, providerFilter, displayNameFilt
   return matchedBindings
 end
 
+--- Retrieves the agent ID for a given C4i name.
+--- @param c4iName string The C4i name to look up.
+--- @return integer|nil agentId The ID of the agent if found, otherwise nil.
+function GetAgentId(c4iName)
+  log:trace("GetAgentId(%s)", c4iName)
+  return agentIdCache:getOrSet(c4iName, function()
+    local agents = Select(ParseXml(C4:GetProjectItems("AGENTS")), "systemitems", "item") or {}
+    if not IsList(agents) then
+      agents = { agents }
+    end
+    for _, agent in pairs(agents) do
+      if not IsEmpty(agent) and agent.c4i == c4iName and not IsEmpty(agent.id) then
+        return tointeger(agent.id)
+      end
+    end
+    return nil
+  end)
+end
+
 --- Retrieves device properties for a given device ID.
---- @param deviceId number The ID of the device to retrieve properties for.
+--- @param deviceId integer The ID of the device to retrieve properties for.
 --- @return table<string, string> properties A table mapping property names to their values.
 function GetDeviceProperties(deviceId)
   log:trace("GetDeviceProperties(%s)", deviceId)
@@ -193,7 +322,7 @@ function GetDeviceProperties(deviceId)
 end
 
 --- Sets device properties for a given device ID.
---- @param deviceId number The ID of the device to set properties on.
+--- @param deviceId integer The ID of the device to set properties on.
 --- @param properties table<string, string> A table mapping property names to their values.
 --- @param onlyIfChanged? boolean If true, only update properties that have changed.
 function SetDeviceProperties(deviceId, properties, onlyIfChanged)
@@ -206,12 +335,103 @@ function SetDeviceProperties(deviceId, properties, onlyIfChanged)
   end
 end
 
+--- @alias GenericCallback fun(deviceId: DeviceId, device: table, index: number): any
+
+--- Removes unknown device IDs and optionally processes known ones using a callback.
+--- This function iterates through device IDs parsed from the `propertyStr` and processes each using the optional callback.
+--- If `deleteUnknownDeviceIds` is `true`, invalid device IDs are removed from the property list.
+--- @generic T
+--- @param propertyStr string The name of the property that stores the device IDs to parse.
+--- @param callback? fun(deviceId: DeviceId, device: table, index: integer): T Optional callback function that processes each valid device.
+--- @param deleteUnknownDeviceIds? boolean When set to `true`, deletes invalid device IDs from the property list.
+--- @return table<DeviceId, T>|nil devices Returns a table of processed device data or `nil` if parsing fails.
+function ParseDeviceIdPropertyList(propertyStr, callback, deleteUnknownDeviceIds)
+  log:trace("ParseDeviceIdPropertyList(%s, <callback>, %s)", propertyStr, deleteUnknownDeviceIds)
+  local properties = Select(ParseXml(C4:GetDeviceData(C4:GetDeviceID(), "properties")), "property")
+  if not IsList(properties) then
+    properties = { properties }
+  end
+  for _, property in pairs(properties) do
+    if not IsEmpty(property) and property.name == propertyStr then
+      if property.type ~= "DEVICE_SELECTOR" then
+        log:error("Failed to parse '%s'; only DEVICE_SELECTOR properties can be parsed", propertyStr)
+        return nil
+      end
+      local c4iNames = {}
+      if not IsEmpty(property.items) and not IsEmpty(property.items.item) then
+        local items = property.items.item
+        if type(items) == "string" then
+          items = { items }
+        end
+        for _, item in pairs(items) do
+          if not IsEmpty(item) then
+            table.insert(c4iNames, item)
+          end
+        end
+      end
+      if IsEmpty(c4iNames) then
+        log:error("Failed to parse '%s'; no c4i name items were found", propertyStr)
+        return nil
+      end
+
+      -- Remove any invalid devices from the property
+      local currentPropertyValue = Properties[propertyStr] or ""
+      if deleteUnknownDeviceIds then
+        local currentPropertyValueLength = string.len(currentPropertyValue)
+        local validDeviceIds = TableKeys(ParseDeviceIdList(currentPropertyValue, c4iNames))
+        table.sort(validDeviceIds)
+        local newPropertyValue = table.concat(validDeviceIds, ",")
+        local newPropertyValueLength = string.len(newPropertyValue)
+        if currentPropertyValueLength ~= newPropertyValueLength then
+          UpdateProperty(propertyStr, newPropertyValue)
+          currentPropertyValue = newPropertyValue
+        end
+      end
+
+      return ParseDeviceIdList(currentPropertyValue, c4iNames, callback)
+    end
+  end
+  log:error("Failed to parse '%s'; property was not found", propertyStr)
+  return nil
+end
+
+--- Parses a comma-separated list of device IDs and processes them.
+--- Each device ID in the list is retrieved, checked for validity, and optionally passed to a callback function for processing.
+--- @param deviceIdListStr string The string of comma-separated device IDs.
+--- @param c4iNames? string[] Optional list of C4i names to filter devices.
+--- @param callback? fun(deviceId: DeviceId, device: table, index: integer): any Optional callback to process each device.
+--- @return table<DeviceId, any> devices Returns a table of processed devices, keyed by device ID.
+function ParseDeviceIdList(deviceIdListStr, c4iNames, callback)
+  log:trace("ParseDeviceIdList(%s, %s, <callback>)", deviceIdListStr, c4iNames)
+  local devices = {}
+  local i = 1
+  for deviceIdStr in string.gmatch(deviceIdListStr or "", "([^,]+)") do
+    local device = GetDevice(deviceIdStr, c4iNames)
+    if device ~= nil then
+      if type(callback) == "function" then
+        local success, result = pcall(callback, device.deviceId, device, i)
+        i = i + 1
+        if success then
+          devices[device.deviceId] = result
+        else
+          log:error("Error parsing ids '%s'; %s", deviceIdListStr, result)
+        end
+      else
+        devices[device.deviceId] = device
+      end
+    else
+      log:warn("Unknown device with id '%s'", deviceIdStr)
+    end
+  end
+  return devices
+end
+
 local xml2lua = require("xml.xml2lua")
 local handler = require("xml.xmlhandler.tree")
 
 --- Parses an XML string and converts it into a Lua table.
 --- Makes use of an external XML parser library.
---- @param xmlStr string The XML string to parse.
+--- @param xmlStr string|nil The XML string to parse.
 --- @return table xml A Lua table representation of the XML structure.
 function ParseXml(xmlStr)
   if IsEmpty(xmlStr) then
@@ -297,6 +517,9 @@ end
 --- @param max? number The upper bound (optional).
 --- @return number|nil value The clamped value.
 --- @overload fun(n: number, min?: number, max?: number): number
+--- @overload fun(n: number, min: number, max?: number): number
+--- @overload fun(n: number, min?: number, max: number): number
+--- @overload fun(n: number, min: number, max: number): number
 function InRange(n, min, max)
   if n == nil then
     return nil
@@ -357,7 +580,7 @@ end
 
 --- Retrieves all values from a table as an array.
 --- @param t table The table to extract values from.
---- @return table values  A list of all values in the table.
+--- @return table values A list of all values in the table.
 function TableValues(t)
   if type(t) ~= "table" then
     return {}
@@ -371,9 +594,10 @@ end
 
 --- Maps a function over each key-value pair in a table.
 --- The function can modify both the keys and values.
---- @param t table The table to map over.
---- @param func fun(value: any, key: any): any Function to apply to each pair (value, key).
---- @return table mappedTable A new table containing the transformed pairs.
+--- @generic K,V,K_NEW,V_NEW
+--- @param t table<K,V> The table to map over.
+--- @param func fun(value: V, key?: K): V_NEW, K_NEW? Function to apply to each pair. Returns (new_value, new_key?).
+--- @return table<K_NEW, V_NEW> mappedTable A new table containing the transformed pairs.
 function TableMap(t, func)
   if IsEmpty(t) then
     return {}
@@ -425,7 +649,7 @@ function TableReverse(t)
 end
 
 --- Deep copies a table, capturing nested tables and ensuring circular references are handled.
---- @generic T
+--- @generic T: table
 --- @param t T|nil The table to be deep-copied.
 --- @param seen? table Tracks tables already copied (internal use).
 --- @return T|nil copiedTable A deep-copied version of the input table.
@@ -599,6 +823,15 @@ function tointeger(value)
   return (value >= 0) and math.floor(value + 0.5) or math.ceil(value - 0.5)
 end
 
+--- Asserts that a value is an integer, narrowing the type from DeviceId.
+--- @param value DeviceId The value to narrow.
+--- @return integer int The integer value.
+function assertInt(value)
+  local int = tointeger(value)
+  assert(int ~= nil, "expected integer, got: " .. tostring(value))
+  return int
+end
+
 function tonumber_locale(str, base)
   local s
   local num
@@ -631,9 +864,9 @@ end
 --- Creates a delay for a specified number of milliseconds.
 --- Uses deferred objects to resolve after the delay.
 --- @param ms number The duration of the delay in milliseconds.
---- @return Deferred<void, void> A deferred object that resolves after the delay.
+--- @return Deferred<nil, nil> A deferred object that resolves after the delay.
 function delay(ms)
-  --- @type Deferred<void, void>
+  --- @type Deferred<nil, nil>
   local d = deferred.new()
   if IsEmpty(ms) or ms <= 0 then
     return d:resolve(nil)
@@ -647,16 +880,17 @@ end
 
 --- Creates a deferred object that is immediately rejected with an error.
 --- @generic F
---- @param error F The error to reject the deferred object with.
+--- @param err F The error to reject the deferred object with.
 --- @return Deferred<any,F> rejected The rejected deferred object.
-function reject(error)
-  return deferred.new():reject(error)
+function reject(err)
+  return deferred.new():reject(err)
 end
 
 --- Creates a deferred object that is immediately resolved with a value.
 --- @generic T
---- @param value T The value to resolve the deferred object with.
---- @return Deferred<T,any> resolved The resolved deferred object.
+--- @param value T|nil The value to resolve the deferred object with.
+--- @return Deferred<T|nil,any> resolved The resolved deferred object.
+--- @overload fun(value: T): Deferred<T, any>
 function resolve(value)
   return deferred.new():resolve(value)
 end
