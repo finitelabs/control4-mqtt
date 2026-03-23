@@ -1,31 +1,31 @@
 <img alt="MQTT" src="./images/header.png" width="500"/>
 
-------------------------------------------------------------------------
+---
 
 # <span style="color:#660066">Overview</span>
 
-> DISCLAIMER: This software is neither affiliated with nor endorsed by
-> either Control4 or MQTT.
+> DISCLAIMER: This software is neither affiliated with nor endorsed by either
+> Control4 or MQTT.
 
-The MQTT Broker driver connects Control4 to an MQTT broker (such as
-Mosquitto, HiveMQ, or other MQTT-compatible platforms). It manages the
-connection and provides pub/sub services to child drivers that connect
-via the MQTT broker connection binding.
+The MQTT Broker driver connects Control4 to an MQTT broker (such as Mosquitto,
+HiveMQ, or other MQTT-compatible platforms). It manages the connection and
+provides pub/sub services to child drivers that connect via the MQTT broker
+connection binding.
 
 ## Driver Suite
 
 The MQTT driver suite consists of two drivers:
 
-| Driver | Direction | Purpose |
-|----|----|----|
-| **MQTT Broker** | N/A | Connection management to your MQTT broker |
-| **MQTT Universal** | Inbound | External MQTT device -\> Control4 (create relays, contacts, buttons, variables from MQTT topics) |
+| Driver             | Direction | Purpose                                                                                          |
+| ------------------ | --------- | ------------------------------------------------------------------------------------------------ |
+| **MQTT Broker**    | N/A       | Connection management to your MQTT broker                                                        |
+| **MQTT Universal** | Inbound   | External MQTT device -\> Control4 (create relays, contacts, buttons, variables from MQTT topics) |
 
 **Typical Setup:**
 
 1.  Add the **MQTT Broker** driver and configure your broker connection
-2.  Add **MQTT Universal** if you need to bring external MQTT devices
-    into Control4
+2.  Add **MQTT Universal** if you need to bring external MQTT devices into
+    Control4
 
 # <span style="color:#660066">Index</span>
 
@@ -69,32 +69,32 @@ The MQTT driver suite consists of two drivers:
 
 ## Driver Installation
 
-Driver installation and setup are similar to most other ip-based
-drivers. Below is an outline of the basic steps for your convenience.
+Driver installation and setup are similar to most other ip-based drivers. Below
+is an outline of the basic steps for your convenience.
 
 1.  Download the latest `control4-mqtt.zip` from
     [Github](https://github.com/finitelabs/control4-mqtt/releases/latest).
 
 2.  Extract and
-    [install]((https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm))
+    [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
     the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
 
-3.  Use the "Search" tab to find the "MQTT Broker" driver and add it to
-    your project.
+3.  Use the "Search" tab to find the "MQTT Broker" driver and add it to your
+    project.
 
-    > ⚠️ A ***single*** broker driver instance is required per broker
-    > you wish to connect to.
+    > ⚠️ A **_single_** broker driver instance is required per broker you wish
+    > to connect to.
 
     ![Search Drivers](images/search-drivers.png)
 
-4.  Configure the [Device Settings](#device-settings) with the
-    connection information.
+4.  Configure the [Device Settings](#device-settings) with the connection
+    information.
 
-5.  After a few moments the [`Driver Status`](#driver-status-read-only)
-    will display `Connected`. If the driver fails to connect, set the
-    [`Log Mode`](#log-mode--off--print--log--print-and-log-) property to
-    `Print` and run action [`Reconnect`](#reconnect) from the actions
-    tab. Then check the lua output window for more information.
+5.  After a few moments the [`Driver Status`](#driver-status-read-only) will
+    display `Connected`. If the driver fails to connect, set the
+    [`Log Mode`](#log-mode--off--print--log--print-and-log-) property to `Print`
+    and run action [`Reconnect`](#reconnect) from the actions tab. Then check
+    the lua output window for more information.
 
 ## Driver Setup
 
@@ -108,8 +108,8 @@ Turns on/off the GitHub cloud automatic updates.
 
 ##### Update Channel
 
-Sets the update channel for which releases are considered during an
-automatic update from the GitHub repo releases.
+Sets the update channel for which releases are considered during an automatic
+update from the GitHub repo releases.
 
 #### Driver Settings
 
@@ -121,11 +121,11 @@ Displays the current status of the driver.
 
 Displays the current version of the driver.
 
-##### Log Level \[ Fatal \| Error \| Warning \| ***Info*** \| Debug \| Trace \| Ultra \]
+##### Log Level \[ Fatal \| Error \| Warning \| **_Info_** \| Debug \| Trace \| Ultra \]
 
 Sets the logging level. Default is `Info`.
 
-##### Log Mode \[ ***Off*** \| Print \| Log \| Print and Log \]
+##### Log Mode \[ **_Off_** \| Print \| Log \| Print and Log \]
 
 Sets the logging mode. Default is `Off`.
 
@@ -133,12 +133,12 @@ Sets the logging mode. Default is `Off`.
 
 ##### Broker Address
 
-Sets the broker IP address (e.g. `192.168.1.30`). Domain names are
-allowed as long as they can be resolved to an accessible IP address by
-the controller. HTTPS is not supported.
+Sets the broker IP address (e.g. `192.168.1.30`). Domain names are allowed as
+long as they can be resolved to an accessible IP address by the controller.
+HTTPS is not supported.
 
-> ⚠️ If you are using an IP address, you should ensure it will not
-> change by assigning a static IP or creating a DHCP reservation.
+> ⚠️ If you are using an IP address, you should ensure it will not change by
+> assigning a static IP or creating a DHCP reservation.
 
 ##### Port
 
@@ -164,29 +164,27 @@ Manually trigger a reconnection to the MQTT broker.
 
 ##### Update Drivers
 
-Trigger all MQTT drivers to update from the latest release on GitHub,
-regardless of the current version.
+Trigger all MQTT drivers to update from the latest release on GitHub, regardless
+of the current version.
 
 ### Programming
 
 **Events:**
 
-- **Broker Connected** - Fires when the driver connects to the MQTT
+- **Broker Connected** - Fires when the driver connects to the MQTT broker
+- **Broker Disconnected** - Fires when the driver disconnects from the MQTT
   broker
-- **Broker Disconnected** - Fires when the driver disconnects from the
-  MQTT broker
 
 **Conditionals:**
 
-- **Broker Connected** - Check if the broker is connected or
-  disconnected
+- **Broker Connected** - Check if the broker is connected or disconnected
 
 <div style="page-break-after: always"></div>
 
 # <span style="color:#660066">Support</span>
 
-If you have any questions or issues integrating this driver with
-Control4, you can file an issue on GitHub:
+If you have any questions or issues integrating this driver with Control4, you
+can file an issue on GitHub:
 
 <https://github.com/finitelabs/control4-mqtt/issues/new>
 
@@ -200,15 +198,15 @@ Control4, you can file an issue on GitHub:
 
 ### Changed
 
-- Broker properties (Automatic Updates, Update Channel) now
-  automatically sync across all MQTT Broker driver instances.
-- Temperature conversions (Fahrenheit/Celsius) now use single decimal
-  precision instead of rounding to the nearest integer or half degree.
+- Broker properties (Automatic Updates, Update Channel) now automatically sync
+  across all MQTT Broker driver instances.
+- Temperature conversions (Fahrenheit/Celsius) now use single decimal precision
+  instead of rounding to the nearest integer or half degree.
 
 ### Fixed
 
-- Fixed variable restore order during driver initialization on
-  controller reboot.
+- Fixed variable restore order during driver initialization on controller
+  reboot.
 
 ## v20260120 - 2026-01-27
 
@@ -220,24 +218,24 @@ Control4, you can file an issue on GitHub:
 
 ### Fixed
 
-- Fixed consumer bindings (e.g., BUTTON_LINK for Event entities) not
-  restoring their connections on controller reboot. The bindings module
-  now tracks connection info and automatically re-establishes consumer
-  binding connections when bindings are restored.
+- Fixed consumer bindings (e.g., BUTTON_LINK for Event entities) not restoring
+  their connections on controller reboot. The bindings module now tracks
+  connection info and automatically re-establishes consumer binding connections
+  when bindings are restored.
 
 ## v20260119 - 2026-01-19
 
 ### Added
 
-- Added Event entity type to MQTT Universal driver for receiving MQTT
-  events and triggering Control4 buttons/keypads.
+- Added Event entity type to MQTT Universal driver for receiving MQTT events and
+  triggering Control4 buttons/keypads.
 
 ### Changed
 
-- Updated MQTT Broker documentation to include Programming section with
-  events and conditionals.
-- Updated MQTT Universal documentation to include missing read-only
-  properties and BUTTON_LINK binding information.
+- Updated MQTT Broker documentation to include Programming section with events
+  and conditionals.
+- Updated MQTT Universal documentation to include missing read-only properties
+  and BUTTON_LINK binding information.
 
 ### Removed
 
@@ -247,21 +245,19 @@ Control4, you can file an issue on GitHub:
 
 ### Added
 
-- Added the MQTT Universal driver for managing multiple MQTT devices
-  from a single driver instance. Supports relays, contacts, buttons,
-  variables, and sensors with features including:
+- Added the MQTT Universal driver for managing multiple MQTT devices from a
+  single driver instance. Supports relays, contacts, buttons, variables, and
+  sensors with features including:
   - Keypad button linking for MQTT buttons
   - Device availability conditionals and events
   - State variables for relay and contact items
   - JSONPath value extraction for complex JSON payloads
-- Added "Broker Connected" conditional and events to the MQTT Broker
-  driver.
+- Added "Broker Connected" conditional and events to the MQTT Broker driver.
 
 ### Deprecated
 
-- Deprecated the MQTT Switch, MQTT Contact, and MQTT Button drivers. Use
-  MQTT Universal instead. This is the terminal release for these
-  drivers.
+- Deprecated the MQTT Switch, MQTT Contact, and MQTT Button drivers. Use MQTT
+  Universal instead. This is the terminal release for these drivers.
 
 ## v20251229 - 2025-12-29
 

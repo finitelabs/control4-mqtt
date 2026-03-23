@@ -73,7 +73,7 @@
 ### Deprecated
 
 - Deprecated the MQTT Switch, MQTT Contact, and MQTT Button drivers. Use MQTT
-  Universal instead. This is the terminal release for these drivers. 
+  Universal instead. This is the terminal release for these drivers.
 
 ## v20251229 - 2025-12-29
 
