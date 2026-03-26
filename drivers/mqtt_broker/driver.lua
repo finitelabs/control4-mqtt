@@ -81,8 +81,6 @@ function OnDriverLateInit()
   if not CheckMinimumVersion("Driver Status") then
     return
   end
-  isLeaderInstance = Select(getMQTTDriverIds(), 1) == C4:GetDeviceID()
-
   C4:FileSetDir("c29tZXNwZWNpYWxrZXk=++11")
 
   -- Fire OnPropertyChanged to set the initial Headers and other Property
@@ -93,6 +91,18 @@ function OnDriverLateInit()
       log:error("Error in OnPropertyChanged for property '%s': %s", p, err or "unknown error")
     end
   end
+  --#ifndef DRIVERCENTRAL
+  -- Periodic update check (every 30 minutes, leader instance only)
+  SetTimer("UpdateCheck", 30 * 60 * 1000, function()
+    -- Recompute leader each cycle in case the previous leader was removed
+    local isLeaderInstance = Select(getMQTTDriverIds(), 1) == C4:GetDeviceID()
+    if isLeaderInstance and toboolean(Properties["Automatic Updates"]) then
+      log:info("Checking for driver update (leader instance)")
+      UpdateDrivers()
+    end
+  end, true)
+  --#endif
+
   gInitialized = true
   Connect()
 end
@@ -100,7 +110,7 @@ end
 function OPC.Automatic_Updates(propertyValue)
   log:trace("OPC.Automatic_Updates('%s')", propertyValue)
   --#ifndef DRIVERCENTRAL
-  if not gInitialized and not isLeaderInstance then
+  if not gInitialized then
     return
   end
   syncPropertyToOtherInstances("Automatic Updates", propertyValue)
@@ -110,7 +120,7 @@ end
 --#ifndef DRIVERCENTRAL
 function OPC.Update_Channel(propertyValue)
   log:trace("OPC.Update_Channel('%s')", propertyValue)
-  if not gInitialized and not isLeaderInstance then
+  if not gInitialized then
     return
   end
   syncPropertyToOtherInstances("Update Channel", propertyValue)
