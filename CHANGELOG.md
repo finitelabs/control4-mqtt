@@ -10,6 +10,17 @@
 [//]: # "### Removed"
 [//]: # "- Removed"
 
+## Unreleased
+
+<!-- #ifndef DRIVERCENTRAL -->
+
+### Fixed
+
+- Fixed automatic driver updates not working when the leader instance is removed
+  from the project
+
+<!-- #endif -->
+
 ## v20260217 - 2026-02-17
 
 ### Changed
