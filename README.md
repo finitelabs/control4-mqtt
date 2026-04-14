@@ -194,10 +194,16 @@ can file an issue on GitHub:
 
 # <span style="color:#660066">Changelog</span>
 
-## Unreleased
+## v20260414 - 2026-04-14
 
 ### Fixed
 
+- Fixed MQTT Universal variables losing their programming "Set Variable"
+  callback after the first inbound MQTT message on the variable's state topic.
+- Fixed MQTT Universal BOOL variables not toggling reliably from programming due
+  to incorrect serialization to Control4.
+- Fixed MQTT Universal variables losing their writable state after a controller
+  reboot or driver reload.
 - Fixed automatic driver updates not working when the leader instance is removed
   from the project
 
