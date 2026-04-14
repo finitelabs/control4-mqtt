@@ -1,11 +1,12 @@
-# Changes here will be overwritten by Copier
-_commit: v0.5.0
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v0.7.0
 _src_path: git@github.com:finitelabs/control4-driver-template.git
-project_name: control4-mqtt
-project_description: Control4 driver for MQTT broker connectivity
-github_org: finitelabs
 distributions: drivercentral oss
-readme_driver_slug: mqtt_broker
+github_org: finitelabs
+lib_modules: bindings conditionals events http lru persist values
+primary_color: '#660066'
+project_description: Control4 driver for MQTT broker connectivity
+project_name: control4-mqtt
 readme_build: oss
-primary_color: "#660066"
+readme_driver_slug: mqtt_broker
 vendor_modules: json deferred drivers-common-public xml
