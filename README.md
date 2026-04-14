@@ -194,7 +194,7 @@ can file an issue on GitHub:
 
 # <span style="color:#660066">Changelog</span>
 
-## v20260414
+## v20260414 - 2026-04-14
 
 ### Fixed
 
