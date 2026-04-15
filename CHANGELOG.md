@@ -10,6 +10,12 @@
 [//]: # "### Removed"
 [//]: # "- Removed"
 
+## v20260415 - 2026-04-15
+
+### Fixed
+
+- Fixed MQTT Broker auto-reconnect reliability.
+
 ## v20260414 - 2026-04-14
 
 ### Fixed
@@ -22,7 +28,7 @@
 reboot or driver reload.
 <!-- #ifndef DRIVERCENTRAL -->
 - Fixed automatic driver updates not working when the leader instance is removed
-from the project
+from the project.
 <!-- #endif -->
 
 ## v20260217 - 2026-02-17
@@ -94,4 +100,4 @@ from the project
 
 ### Added
 
-- Initial Release
+- Initial Release.

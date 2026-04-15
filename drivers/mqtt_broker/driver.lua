@@ -295,6 +295,12 @@ function Connect()
   MQTT:OnConnect(function(obj, reasonCode, flags, message)
     log:info("MQTT:OnConnect reasonCode=%s message=%s", reasonCode, message or "")
     if reasonCode == 0 then
+      -- Drop any pending reconnect armed by a prior OnDisconnect (e.g., the
+      -- OLD client's async OnDisconnect from the intentional Disconnect()
+      -- during this Connect cycle). Without this, a stale 30s timer would
+      -- fire after the session was up and tear the working connection down.
+      CancelTimer("reconnect")
+
       MQTT_CONNECTED = true
       updateStatus("Connected")
       C4:FireEvent("Broker Connected")
@@ -331,10 +337,17 @@ function Connect()
     -- Notify child drivers
     notifyChildDrivers("BROKER_DISCONNECTED", {})
 
-    -- Schedule reconnect
-    SetTimer("reconnect", 30 * ONE_SECOND, function()
-      Connect()
-    end)
+    -- Only auto-reconnect on unclean disconnects. The OnDisconnect docs are
+    -- explicit: "If your driver did not request the disconnection, it may
+    -- want to start a timer to attempt to call the Reconnect API." A clean
+    -- disconnect (reasonCode == 0) is typically one we initiated (e.g., via
+    -- the Disconnect() inside Connect()), and arming a reconnect for it
+    -- would tear down the new session we're in the middle of bringing up.
+    if reasonCode ~= 0 then
+      SetTimer("reconnect", 30 * ONE_SECOND, function()
+        Connect()
+      end)
+    end
   end)
 
   MQTT:OnMessage(function(obj, msgId, topic, payload, qos, retain)
@@ -364,13 +377,7 @@ function Connect()
   updateStatus("Connecting...")
   local keepAlive = tonumber(Properties["Keep Alive"]) or 60
   log:info("Connecting to MQTT broker at %s:%s (keepAlive=%s)", brokerAddress, port, keepAlive)
-
-  -- Defer connection slightly to allow any lingering connections to clean up
-  SetTimer("mqtt_connect", ONE_SECOND, function()
-    if MQTT then
-      MQTT:Connect(brokerAddress, port, keepAlive)
-    end
-  end)
+  MQTT:Connect(brokerAddress, port, keepAlive)
 end
 
 -- Handle SUBSCRIBE command from child drivers

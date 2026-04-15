@@ -194,6 +194,12 @@ can file an issue on GitHub:
 
 # <span style="color:#660066">Changelog</span>
 
+## v20260415 - 2026-04-15
+
+### Fixed
+
+- Fixed MQTT Broker auto-reconnect reliability.
+
 ## v20260414 - 2026-04-14
 
 ### Fixed
@@ -205,7 +211,7 @@ can file an issue on GitHub:
 - Fixed MQTT Universal variables losing their writable state after a controller
   reboot or driver reload.
 - Fixed automatic driver updates not working when the leader instance is removed
-  from the project
+  from the project.
 
 ## v20260217 - 2026-02-17
 
@@ -276,4 +282,4 @@ can file an issue on GitHub:
 
 ### Added
 
-- Initial Release
+- Initial Release.
