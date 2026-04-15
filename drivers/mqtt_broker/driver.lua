@@ -293,6 +293,13 @@ function Connect()
 
   -- Set up callbacks
   MQTT:OnConnect(function(obj, reasonCode, flags, message)
+    -- Ignore callbacks from a prior client that was replaced mid-flight by a
+    -- subsequent Connect(). Acting on stale events would poison the new
+    -- session's state (MQTT_CONNECTED / status / child notifications).
+    if obj ~= MQTT then
+      log:debug("Ignoring stale OnConnect from replaced client")
+      return
+    end
     log:info("MQTT:OnConnect reasonCode=%s message=%s", reasonCode, message or "")
     if reasonCode == 0 then
       -- Drop any pending reconnect armed by a prior OnDisconnect (e.g., the
@@ -328,6 +335,15 @@ function Connect()
   end)
 
   MQTT:OnDisconnect(function(obj, reasonCode)
+    -- Ignore callbacks from a prior client that was replaced mid-flight by a
+    -- subsequent Connect(). The OLD client's Disconnect() fires this callback
+    -- asynchronously; without this guard it would overwrite connection state
+    -- and emit a spurious BROKER_DISCONNECTED to children after the new
+    -- session is already live.
+    if obj ~= MQTT then
+      log:debug("Ignoring stale OnDisconnect from replaced client")
+      return
+    end
     local reasonString = MQTT and MQTT:ReasonCodeToString(reasonCode) or "unknown"
     log:warn("MQTT:OnDisconnect reasonCode=%s - %s", reasonCode, reasonString)
     MQTT_CONNECTED = false
@@ -337,12 +353,11 @@ function Connect()
     -- Notify child drivers
     notifyChildDrivers("BROKER_DISCONNECTED", {})
 
-    -- Only auto-reconnect on unclean disconnects. The OnDisconnect docs are
-    -- explicit: "If your driver did not request the disconnection, it may
-    -- want to start a timer to attempt to call the Reconnect API." A clean
-    -- disconnect (reasonCode == 0) is typically one we initiated (e.g., via
-    -- the Disconnect() inside Connect()), and arming a reconnect for it
-    -- would tear down the new session we're in the middle of bringing up.
+    -- Only auto-reconnect on unclean disconnects. The stale-client guard
+    -- above filters out our own Disconnect() calls (they fire on the
+    -- replaced client); the reasonCode gate additionally filters server-
+    -- initiated clean shutdowns (reasonCode == 0) so we don't hammer a
+    -- broker that's deliberately closing the connection.
     if reasonCode ~= 0 then
       SetTimer("reconnect", 30 * ONE_SECOND, function()
         Connect()
