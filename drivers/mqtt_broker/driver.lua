@@ -293,8 +293,21 @@ function Connect()
 
   -- Set up callbacks
   MQTT:OnConnect(function(obj, reasonCode, flags, message)
+    -- Ignore callbacks from a prior client that was replaced mid-flight by a
+    -- subsequent Connect(). Acting on stale events would poison the new
+    -- session's state (MQTT_CONNECTED / status / child notifications).
+    if obj ~= MQTT then
+      log:debug("Ignoring stale OnConnect from replaced client")
+      return
+    end
     log:info("MQTT:OnConnect reasonCode=%s message=%s", reasonCode, message or "")
     if reasonCode == 0 then
+      -- Drop any pending reconnect armed by a prior OnDisconnect (e.g., the
+      -- OLD client's async OnDisconnect from the intentional Disconnect()
+      -- during this Connect cycle). Without this, a stale 30s timer would
+      -- fire after the session was up and tear the working connection down.
+      CancelTimer("reconnect")
+
       MQTT_CONNECTED = true
       updateStatus("Connected")
       C4:FireEvent("Broker Connected")
@@ -322,6 +335,15 @@ function Connect()
   end)
 
   MQTT:OnDisconnect(function(obj, reasonCode)
+    -- Ignore callbacks from a prior client that was replaced mid-flight by a
+    -- subsequent Connect(). The OLD client's Disconnect() fires this callback
+    -- asynchronously; without this guard it would overwrite connection state
+    -- and emit a spurious BROKER_DISCONNECTED to children after the new
+    -- session is already live.
+    if obj ~= MQTT then
+      log:debug("Ignoring stale OnDisconnect from replaced client")
+      return
+    end
     local reasonString = MQTT and MQTT:ReasonCodeToString(reasonCode) or "unknown"
     log:warn("MQTT:OnDisconnect reasonCode=%s - %s", reasonCode, reasonString)
     MQTT_CONNECTED = false
@@ -331,10 +353,16 @@ function Connect()
     -- Notify child drivers
     notifyChildDrivers("BROKER_DISCONNECTED", {})
 
-    -- Schedule reconnect
-    SetTimer("reconnect", 30 * ONE_SECOND, function()
-      Connect()
-    end)
+    -- Only auto-reconnect on unclean disconnects. The stale-client guard
+    -- above filters out our own Disconnect() calls (they fire on the
+    -- replaced client); the reasonCode gate additionally filters server-
+    -- initiated clean shutdowns (reasonCode == 0) so we don't hammer a
+    -- broker that's deliberately closing the connection.
+    if reasonCode ~= 0 then
+      SetTimer("reconnect", 30 * ONE_SECOND, function()
+        Connect()
+      end)
+    end
   end)
 
   MQTT:OnMessage(function(obj, msgId, topic, payload, qos, retain)
@@ -364,13 +392,7 @@ function Connect()
   updateStatus("Connecting...")
   local keepAlive = tonumber(Properties["Keep Alive"]) or 60
   log:info("Connecting to MQTT broker at %s:%s (keepAlive=%s)", brokerAddress, port, keepAlive)
-
-  -- Defer connection slightly to allow any lingering connections to clean up
-  SetTimer("mqtt_connect", ONE_SECOND, function()
-    if MQTT then
-      MQTT:Connect(brokerAddress, port, keepAlive)
-    end
-  end)
+  MQTT:Connect(brokerAddress, port, keepAlive)
 end
 
 -- Handle SUBSCRIBE command from child drivers
