@@ -24,6 +24,7 @@ local githubUpdater = require("lib.github-updater")
 -- MQTT client instance
 local MQTT = nil
 local MQTT_CONNECTED = false
+local INTENTIONAL_DISCONNECTS_PENDING = 0
 
 -- Track subscriptions: topic -> {deviceId -> true}
 local subscriptions = {}
@@ -250,8 +251,9 @@ function Connect()
     return
   end
 
-  -- Cancel any pending reconnect
+  -- Cancel any pending reconnects or delayed connects before replacing the client
   CancelTimer("reconnect")
+  CancelTimer("mqtt_connect")
 
   -- Notify children we're disconnecting before reconnecting
   notifyChildDrivers("BROKER_DISCONNECTED", {})
@@ -259,6 +261,7 @@ function Connect()
   -- Disconnect existing connection
   if MQTT then
     log:debug("Disconnecting existing MQTT connection")
+    INTENTIONAL_DISCONNECTS_PENDING = INTENTIONAL_DISCONNECTS_PENDING + 1
     MQTT:Disconnect()
     MQTT = nil
   end
@@ -282,19 +285,26 @@ function Connect()
   local clientId = "control4-mqtt-device-" .. C4:GetDeviceID()
   log:info("Creating MQTT client with clientId: %s", clientId)
   MQTT = C4:MQTT(clientId)
+  local client = MQTT
 
   -- Set credentials if provided
   local username = Properties["Username"]
   local password = Properties["Password"]
   if not IsEmpty(username) then
     log:debug("Setting MQTT credentials for user: %s", username)
-    MQTT:SetUsernameAndPassword(username, password or "")
+    client:SetUsernameAndPassword(username, password or "")
   end
 
   -- Set up callbacks
-  MQTT:OnConnect(function(obj, reasonCode, flags, message)
+  client:OnConnect(function(obj, reasonCode, flags, message)
+    if obj ~= MQTT then
+      log:debug("Ignoring stale MQTT:OnConnect callback")
+      return
+    end
+
     log:info("MQTT:OnConnect reasonCode=%s message=%s", reasonCode, message or "")
     if reasonCode == 0 then
+      CancelTimer("reconnect")
       MQTT_CONNECTED = true
       updateStatus("Connected")
       C4:FireEvent("Broker Connected")
@@ -303,14 +313,14 @@ function Connect()
       for topic, bindings in pairs(subscriptions) do
         if next(bindings) then
           log:debug("Re-subscribing to topic: %s", topic)
-          MQTT:Subscribe(topic)
+          client:Subscribe(topic)
         end
       end
 
       -- Notify child drivers
       notifyChildDrivers("BROKER_CONNECTED", {})
     else
-      local errorMessage = message or MQTT:ReasonCodeToString(reasonCode) or "unknown"
+      local errorMessage = message or client:ReasonCodeToString(reasonCode) or "unknown"
       updateStatus("Connect failed: " .. errorMessage)
       log:error("MQTT connection failed: %s", errorMessage)
 
@@ -321,8 +331,27 @@ function Connect()
     end
   end)
 
-  MQTT:OnDisconnect(function(obj, reasonCode)
-    local reasonString = MQTT and MQTT:ReasonCodeToString(reasonCode) or "unknown"
+  client:OnDisconnect(function(obj, reasonCode)
+    if obj ~= MQTT and reasonCode == 0 and INTENTIONAL_DISCONNECTS_PENDING > 0 then
+      INTENTIONAL_DISCONNECTS_PENDING = INTENTIONAL_DISCONNECTS_PENDING - 1
+      log:debug("Ignoring intentional MQTT disconnect from replaced client")
+      return
+    end
+
+    if obj ~= MQTT then
+      log:debug("Ignoring stale MQTT:OnDisconnect callback")
+      return
+    end
+
+    local reasonString = client:ReasonCodeToString(reasonCode) or "unknown"
+    if reasonCode == 0 then
+      if INTENTIONAL_DISCONNECTS_PENDING > 0 then
+        INTENTIONAL_DISCONNECTS_PENDING = INTENTIONAL_DISCONNECTS_PENDING - 1
+      end
+      log:debug("MQTT:OnDisconnect was intentional, skipping reconnect")
+      return
+    end
+
     log:warn("MQTT:OnDisconnect reasonCode=%s - %s", reasonCode, reasonString)
     MQTT_CONNECTED = false
     updateStatus("Disconnected")
@@ -331,13 +360,18 @@ function Connect()
     -- Notify child drivers
     notifyChildDrivers("BROKER_DISCONNECTED", {})
 
-    -- Schedule reconnect
+    -- Schedule reconnect only for unexpected disconnects
     SetTimer("reconnect", 30 * ONE_SECOND, function()
       Connect()
     end)
   end)
 
-  MQTT:OnMessage(function(obj, msgId, topic, payload, qos, retain)
+  client:OnMessage(function(obj, msgId, topic, payload, qos, retain)
+    if obj ~= MQTT then
+      log:debug("Ignoring stale MQTT:OnMessage callback")
+      return
+    end
+
     log:debug("MQTT:OnMessage msgId=%s topic=%s payload=%s qos=%s retain=%s", msgId, topic, payload, qos, retain)
     -- Cache the last message for new subscribers
     lastMessages[topic] = {
@@ -348,29 +382,33 @@ function Connect()
     routeMessageToSubscribers(topic, payload, qos, retain)
   end)
 
-  MQTT:OnPublish(function(obj, msgId, reasonCode)
+  client:OnPublish(function(obj, msgId, reasonCode)
+    if obj ~= MQTT then
+      log:debug("Ignoring stale MQTT:OnPublish callback")
+      return
+    end
+
     if reasonCode ~= 0 then
-      local errorString = MQTT and MQTT:ErrorCodeToString(reasonCode) or "unknown"
+      local errorString = client:ErrorCodeToString(reasonCode) or "unknown"
       log:error("MQTT:Publish error msgId=%s: %s - %s", msgId, reasonCode, errorString)
     else
       log:trace("MQTT:Publish success msgId=%s", msgId)
     end
   end)
 
-  MQTT:OnSubscribe(function(obj, msgId, grantedQos)
+  client:OnSubscribe(function(obj, msgId, grantedQos)
+    if obj ~= MQTT then
+      log:debug("Ignoring stale MQTT:OnSubscribe callback")
+      return
+    end
+
     log:debug("MQTT:OnSubscribe msgId=%s grantedQos=%s", msgId, grantedQos)
   end)
 
   updateStatus("Connecting...")
   local keepAlive = tonumber(Properties["Keep Alive"]) or 60
   log:info("Connecting to MQTT broker at %s:%s (keepAlive=%s)", brokerAddress, port, keepAlive)
-
-  -- Defer connection slightly to allow any lingering connections to clean up
-  SetTimer("mqtt_connect", ONE_SECOND, function()
-    if MQTT then
-      MQTT:Connect(brokerAddress, port, keepAlive)
-    end
-  end)
+  client:Connect(brokerAddress, port, keepAlive)
 end
 
 -- Handle SUBSCRIBE command from child drivers
