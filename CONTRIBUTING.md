@@ -17,7 +17,6 @@ synced with `copier update`.
 **Build tooling:**
 
 - `Makefile` — build, format, docs, package, and clean targets
-- `package.json` — npm dependency declarations only (no scripts)
 
 **Common libraries (`src/lib/`):**
 
@@ -44,10 +43,12 @@ synced with `copier update`.
 
 **Tools (`tools/`):**
 
-- `preprocess` — C-style `#ifdef`/`#ifndef` preprocessor for Lua, XML, and
+- `preprocess.py` — C-style `#ifdef`/`#ifndef` preprocessor for Lua, XML, and
   Markdown
+- `docs.py` — documentation generation (Markdown → HTML → PDF, plus README)
+- `package.py` — packaging helpers (driver.xml stamping, zip bundling)
 - `gen-squishy.lua` — auto-generates squishy files from driver.c4zproj
-- `pandoc-remove-style.lua` — Pandoc filter for README generation
+- `github-markdown.css` — vendored stylesheet for the rendered docs
 
 **Other:**
 
@@ -67,30 +68,40 @@ synced with `copier update`.
 
 ## Updating Shared Code
 
-When the template is updated, sync changes into this repo:
+Copier is only needed for this occasional sync — it is **not** a build
+dependency and is intentionally not installed by `make init`. Run it without
+installing anything:
 
 ```bash
-copier update --trust
+uvx copier update --trust        # using uv (https://docs.astral.sh/uv/)
+# or:
+pipx run copier update --trust   # using pipx
 ```
 
 Copier will show diffs for any files that changed and let you resolve conflicts.
 It tracks which template version you're on via the `.copier-answers.yml` file
 (committed to the repo).
 
-To update shared code for **all** driver repos, run `copier update` in each one.
+To update shared code for **all** driver repos, run the same command in each
+one.
 
 ## Build System
 
-This project uses `make` for build orchestration and `npm` only for JavaScript
-dependency management.
+This project uses `make` for build orchestration. All tooling is Python (in a
+local `.venv`) plus a few standalone binaries — no Node/npm.
 
 ### Prerequisites
 
-- Python 3.9+ (for preprocess and driverpackager)
-- Node.js / npm (for formatter and doc dependencies)
-- [xmlstarlet](https://xmlstarlet.sourceforge.net/) (`brew install xmlstarlet`)
+- Python 3.9+ (docs, formatters, preprocess, and driverpackager)
 - [LuaJIT](https://luajit.org/) (`brew install luajit`) — for squish and tests
-- [Pandoc](https://pandoc.org/) (`brew install pandoc`) — for README generation
+- [stylua](https://github.com/JohnnyMorganz/StyLua) (`brew install stylua`) —
+  Lua formatter
+- [Pango](https://gtk.org/) (`brew install pango`) — WeasyPrint's PDF rendering
+  engine
+
+`make init` creates the `.venv` and installs the Python dependencies
+(WeasyPrint, markdown-it-py, Pygments, mdformat, black, and the driverpackager's
+M2Crypto + lxml).
 
 ### Common Commands
 
@@ -105,13 +116,13 @@ make clean-all     # Remove everything (build artifacts, deps, venv)
 
 ### Build Pipeline
 
-1. **Format** — stylua (Lua), black (Python), prettier (Markdown)
-2. **Preprocess** — resolve `#ifdef`/`#ifndef` directives per distribution
-3. **Generate squishy** — create squish manifests from .c4zproj files
-4. **Update driver.xml** — stamp version date and modified timestamp
-5. **Generate docs** — Markdown → HTML → PDF, plus README
-6. **Package** — run driverpackager to create .c4z files
-7. **Zip** — bundle .c4z and .pdf files per distribution
+1. **Format** — stylua (Lua), black (Python), mdformat (Markdown)
+1. **Preprocess** — resolve `#ifdef`/`#ifndef` directives per distribution
+1. **Generate squishy** — create squish manifests from .c4zproj files
+1. **Update driver.xml** — stamp version date and modified timestamp
+1. **Generate docs** — Markdown → HTML → PDF, plus README
+1. **Package** — run driverpackager to create .c4z files
+1. **Zip** — bundle .c4z and .pdf files per distribution
 
 ### Distributions
 
@@ -123,8 +134,8 @@ distribution-specific code paths controlled by `#ifdef` directives (e.g.,
 
 ## Preprocessor Directives
 
-The `tools/preprocess` script supports C-style conditional compilation in Lua,
-XML, and Markdown:
+The `tools/preprocess.py` script supports C-style conditional compilation in
+Lua, XML, and Markdown:
 
 ```lua
 --#ifdef DRIVERCENTRAL

@@ -1,14 +1,22 @@
 # <span style="color:#660066">Changelog</span>
 
-[//]: # "## v[Version] - YYY-MM-DD"
-[//]: # "### Added"
-[//]: # "- Added"
-[//]: # "### Fixed"
-[//]: # "- Fixed"
-[//]: # "### Changed"
-[//]: # "- Changed"
-[//]: # "### Removed"
-[//]: # "- Removed"
+<!--
+Template for a new release entry (copy below the heading, fill in, uncomment):
+
+## v[Version] - YYYY-MM-DD
+
+### Added
+- Added
+
+### Fixed
+- Fixed
+
+### Changed
+- Changed
+
+### Removed
+- Removed
+-->
 
 ## v20260415 - 2026-04-15
 
@@ -25,10 +33,13 @@
 - Fixed MQTT Universal BOOL variables not toggling reliably from programming due
   to incorrect serialization to Control4.
 - Fixed MQTT Universal variables losing their writable state after a controller
-reboot or driver reload.
+  reboot or driver reload.
+
 <!-- #ifndef DRIVERCENTRAL -->
+
 - Fixed automatic driver updates not working when the leader instance is removed
-from the project.
+  from the project.
+
 <!-- #endif -->
 
 ## v20260217 - 2026-02-17

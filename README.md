@@ -1,6 +1,8 @@
+<!-- Copyright 2026 Finite Labs, LLC. All rights reserved. -->
+
 <img alt="MQTT" src="./images/header.png" width="500"/>
 
----
+______________________________________________________________________
 
 # <span style="color:#660066">Overview</span>
 
@@ -16,24 +18,27 @@ connection binding.
 
 The MQTT driver suite consists of two drivers:
 
-| Driver             | Direction | Purpose                                                                                          |
-| ------------------ | --------- | ------------------------------------------------------------------------------------------------ |
-| **MQTT Broker**    | N/A       | Connection management to your MQTT broker                                                        |
-| **MQTT Universal** | Inbound   | External MQTT device -\> Control4 (create relays, contacts, buttons, variables from MQTT topics) |
+| Driver             | Direction | Purpose                                                                                         |
+| ------------------ | --------- | ----------------------------------------------------------------------------------------------- |
+| **MQTT Broker**    | N/A       | Connection management to your MQTT broker                                                       |
+| **MQTT Universal** | Inbound   | External MQTT device -> Control4 (create relays, contacts, buttons, variables from MQTT topics) |
 
 **Typical Setup:**
 
-1.  Add the **MQTT Broker** driver and configure your broker connection
-2.  Add **MQTT Universal** if you need to bring external MQTT devices into
-    Control4
+1. Add the **MQTT Broker** driver and configure your broker connection
+1. Add **MQTT Universal** if you need to bring external MQTT devices into
+   Control4
 
 # <span style="color:#660066">Index</span>
 
 <div style="font-size: small">
 
 - [System Requirements](#system-requirements)
+
 - [Features](#features)
+
 - [Installer Setup](#installer-setup)
+
   - [Driver Installation](#driver-installation)
   - [Driver Setup](#driver-setup)
     - [Driver Properties](#driver-properties)
@@ -42,7 +47,9 @@ The MQTT driver suite consists of two drivers:
       - [MQTT Settings](#mqtt-settings)
   - [Driver Actions](#driver-actions)
   - [Programming](#programming)
+
 - [Support](#support)
+
 - [Changelog](#changelog)
 
 </div>
@@ -72,29 +79,29 @@ The MQTT driver suite consists of two drivers:
 Driver installation and setup are similar to most other ip-based drivers. Below
 is an outline of the basic steps for your convenience.
 
-1.  Download the latest `control4-mqtt.zip` from
-    [Github](https://github.com/finitelabs/control4-mqtt/releases/latest).
+1. Download the latest `control4-mqtt.zip` from
+   [Github](https://github.com/finitelabs/control4-mqtt/releases/latest).
 
-2.  Extract and
-    [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
-    the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
+1. Extract and
+   [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
+   the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
 
-3.  Use the "Search" tab to find the "MQTT Broker" driver and add it to your
-    project.
+1. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
+   project.
 
-    > ⚠️ A **_single_** broker driver instance is required per broker you wish
-    > to connect to.
+   > ⚠️ A **_single_** broker driver instance is required per broker you wish to
+   > connect to.
 
-    ![Search Drivers](images/search-drivers.png)
+   ![Search Drivers](images/search-drivers.png)
 
-4.  Configure the [Device Settings](#device-settings) with the connection
-    information.
+1. Configure the [Device Settings](#device-settings) with the connection
+   information.
 
-5.  After a few moments the [`Driver Status`](#driver-status-read-only) will
-    display `Connected`. If the driver fails to connect, set the
-    [`Log Mode`](#log-mode--off--print--log--print-and-log-) property to `Print`
-    and run action [`Reconnect`](#reconnect) from the actions tab. Then check
-    the lua output window for more information.
+1. After a few moments the [`Driver Status`](#driver-status-read-only) will
+   display `Connected`. If the driver fails to connect, set the
+   [`Log Mode`](#log-mode--off--print--log--print-and-log-) property to `Print`
+   and run action [`Reconnect`](#reconnect) from the actions tab. Then check the
+   lua output window for more information.
 
 ## Driver Setup
 
@@ -121,11 +128,11 @@ Displays the current status of the driver.
 
 Displays the current version of the driver.
 
-##### Log Level \[ Fatal \| Error \| Warning \| **_Info_** \| Debug \| Trace \| Ultra \]
+##### Log Level \[ Fatal | Error | Warning | **_Info_** | Debug | Trace | Ultra \]
 
 Sets the logging level. Default is `Info`.
 
-##### Log Mode \[ **_Off_** \| Print \| Log \| Print and Log \]
+##### Log Mode \[ **_Off_** | Print | Log | Print and Log \]
 
 Sets the logging mode. Default is `Off`.
 
@@ -186,13 +193,31 @@ of the current version.
 If you have any questions or issues integrating this driver with Control4, you
 can file an issue on GitHub:
 
-<https://github.com/finitelabs/control4-mqtt/issues/new>
+https://github.com/finitelabs/control4-mqtt/issues/new
 
 <a href="https://www.buymeacoffee.com/derek.miller" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 <div style="page-break-after: always"></div>
 
 # <span style="color:#660066">Changelog</span>
+
+<!--
+Template for a new release entry (copy below the heading, fill in, uncomment):
+
+## v[Version] - YYYY-MM-DD
+
+### Added
+- Added
+
+### Fixed
+- Fixed
+
+### Changed
+- Changed
+
+### Removed
+- Removed
+-->
 
 ## v20260415 - 2026-04-15
 
@@ -206,10 +231,13 @@ can file an issue on GitHub:
 
 - Fixed MQTT Universal variables losing their programming "Set Variable"
   callback after the first inbound MQTT message on the variable's state topic.
+
 - Fixed MQTT Universal BOOL variables not toggling reliably from programming due
   to incorrect serialization to Control4.
+
 - Fixed MQTT Universal variables losing their writable state after a controller
   reboot or driver reload.
+
 - Fixed automatic driver updates not working when the leader instance is removed
   from the project.
 
