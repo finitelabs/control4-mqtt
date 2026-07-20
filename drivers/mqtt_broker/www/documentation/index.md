@@ -1,4 +1,4 @@
-[copyright]: # "Copyright 2026 Finite Labs, LLC. All rights reserved."
+<!-- Copyright 2026 Finite Labs, LLC. All rights reserved. -->
 
 <style>
 @media print {
@@ -15,7 +15,7 @@
 
 <img alt="MQTT" src="./images/header.png" width="500"/>
 
----
+______________________________________________________________________
 
 # <span style="color:#660066">Overview</span>
 
@@ -43,7 +43,7 @@ The MQTT driver suite consists of two drivers:
 **Typical Setup:**
 
 1. Add the **MQTT Broker** driver and configure your broker connection
-2. Add **MQTT Universal** if you need to bring external MQTT devices into
+1. Add **MQTT Universal** if you need to bring external MQTT devices into
    Control4
 
 # <span style="color:#660066">Index</span>
@@ -66,7 +66,9 @@ The MQTT driver suite consists of two drivers:
   - [Programming](#programming)
   <!-- #ifdef DRIVERCENTRAL -->
 - [Developer Information](#developer-information)
+
 <!-- #endif -->
+
 - [Support](#support)
 - [Changelog](#changelog)
 
@@ -117,10 +119,12 @@ is an outline of the basic steps for your convenience.
 
 1. Download the latest `control4-mqtt.zip` from
    [DriverCentral](https://drivercentral.io/platforms/control4-drivers/utility/mqtt).
-2. Extract and
+
+1. Extract and
    [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
    the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
-3. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
+
+1. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
    project.
 
    > ⚠️ A **_single_** broker driver instance is required per broker you wish to
@@ -128,16 +132,19 @@ is an outline of the basic steps for your convenience.
 
    ![Search Drivers](images/search-drivers.png)
 
-4. Select the newly added driver in the "System Design" tab. You will notice
+1. Select the newly added driver in the "System Design" tab. You will notice
    that the `Cloud Status` reflects the license state. If you have purchased a
    license it will show `License Activated`, otherwise `Trial Running` and
    remaining trial duration.
-5. You can refresh license status by selecting the "DriverCentral Cloud" driver
+
+1. You can refresh license status by selecting the "DriverCentral Cloud" driver
    in the "System Design" tab and perform the "Check Drivers" action.
    <br><img alt="Check Drivers" src="./images/check-drivers.png" width="300"/>
-6. Configure the [Device Settings](#device-settings) with the connection
+
+1. Configure the [Device Settings](#device-settings) with the connection
    information.
-7. After a few moments the [`Driver Status`](#driver-status-read-only) will
+
+1. After a few moments the [`Driver Status`](#driver-status-read-only) will
    display `Connected`. If the driver fails to connect, set the
    [`Log Mode`](#log-mode--off--print--log--print-and-log-) property to `Print`
    and run action [`Reconnect`](#reconnect) from the actions tab. Then check the
@@ -147,10 +154,12 @@ is an outline of the basic steps for your convenience.
 
 1. Download the latest `control4-mqtt.zip` from
    [Github](https://github.com/finitelabs/control4-mqtt/releases/latest).
-2. Extract and
+
+1. Extract and
    [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
    the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
-3. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
+
+1. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
    project.
 
    > ⚠️ A **_single_** broker driver instance is required per broker you wish to
@@ -158,9 +167,10 @@ is an outline of the basic steps for your convenience.
 
    ![Search Drivers](images/search-drivers.png)
 
-4. Configure the [Device Settings](#device-settings) with the connection
+1. Configure the [Device Settings](#device-settings) with the connection
    information.
-5. After a few moments the [`Driver Status`](#driver-status-read-only) will
+
+1. After a few moments the [`Driver Status`](#driver-status-read-only) will
    display `Connected`. If the driver fails to connect, set the
    [`Log Mode`](#log-mode--off--print--log--print-and-log-) property to `Print`
    and run action [`Reconnect`](#reconnect) from the actions tab. Then check the
@@ -209,11 +219,11 @@ Displays the current status of the driver.
 
 Displays the current version of the driver.
 
-##### Log Level [ Fatal | Error | Warning | **_Info_** | Debug | Trace | Ultra ]
+##### Log Level \[ Fatal | Error | Warning | **_Info_** | Debug | Trace | Ultra \]
 
 Sets the logging level. Default is `Info`.
 
-##### Log Mode [ **_Off_** | Print | Log | Print and Log ]
+##### Log Mode \[ **_Off_** | Print | Log | Print and Log \]
 
 Sets the logging mode. Default is `Off`.
 
