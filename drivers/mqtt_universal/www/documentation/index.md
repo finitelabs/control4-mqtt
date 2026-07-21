@@ -1,4 +1,4 @@
-[copyright]: # "Copyright 2026 Finite Labs, LLC. All rights reserved."
+<!-- Copyright 2026 Finite Labs, LLC. All rights reserved. -->
 
 <style>
 @media print {
@@ -15,7 +15,7 @@
 
 <img alt="MQTT" src="./images/header.png" width="500"/>
 
----
+______________________________________________________________________
 
 # <span style="color:#660066">Overview</span>
 
@@ -55,7 +55,9 @@ integration with any MQTT-based system.
   - [Programming](#programming)
   <!-- #ifdef DRIVERCENTRAL -->
 - [Developer Information](#developer-information)
+
 <!-- #endif -->
+
 - [Support](#support)
 - [Changelog](#changelog)
 
@@ -101,10 +103,10 @@ integration with any MQTT-based system.
 ## Driver Installation
 
 1. Ensure the MQTT Broker driver is installed and connected.
-2. Add the "MQTT Universal" driver to your project.
-3. In the Connections tab, bind the MQTT Universal driver to the MQTT Broker.
-4. Configure global availability settings (optional).
-5. Add devices and variables, then configure their MQTT topics.
+1. Add the "MQTT Universal" driver to your project.
+1. In the Connections tab, bind the MQTT Universal driver to the MQTT Broker.
+1. Configure global availability settings (optional).
+1. Add devices and variables, then configure their MQTT topics.
 
 ## Driver Setup
 
@@ -134,11 +136,11 @@ Displays the current status of the driver.
 
 Displays the current version of the driver.
 
-##### Log Level [ Fatal | Error | Warning | **_Info_** | Debug | Trace | Ultra ]
+##### Log Level \[ Fatal | Error | Warning | **_Info_** | Debug | Trace | Ultra \]
 
 Sets the logging level. Default is `Info`.
 
-##### Log Mode [ **_Off_** | Print | Log | Print and Log ]
+##### Log Mode \[ **_Off_** | Print | Log | Print and Log \]
 
 Sets the logging mode. Default is `Off`.
 
