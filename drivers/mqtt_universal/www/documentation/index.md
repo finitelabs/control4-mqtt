@@ -63,8 +63,6 @@ integration with any MQTT-based system.
 
 </div>
 
-<div style="page-break-after: always"></div>
-
 # <span style="color:#660066">System Requirements</span>
 
 - Control4 OS 3.3+
@@ -95,8 +93,6 @@ integration with any MQTT-based system.
 - "Match one, default other" state parsing for flexible payload matching
 - JSONPath extraction for nested JSON payloads
 - All items persist across driver restarts
-
-<div style="page-break-after: always"></div>
 
 # <span style="color:#660066">Installer Setup</span>
 
@@ -373,8 +369,6 @@ Variable-type items (STRING, BOOL, NUMBER, FLOAT, TEMPERATURE, HUMIDITY) create
 Control4 variables that can be read in conditionals and written to trigger
 publishing to the command topic.
 
-<div style="page-break-after: always"></div>
-
 <!-- #ifdef DRIVERCENTRAL -->
 
 # <span style="color:#660066">Developer Information</span>
@@ -415,7 +409,5 @@ https://github.com/finitelabs/control4-mqtt/issues/new
 <a href="https://www.buymeacoffee.com/derek.miller" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 <!-- #endif -->
-
-<div style="page-break-after: always"></div>
 
 <!-- #embed-changelog -->

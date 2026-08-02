@@ -54,8 +54,6 @@ The MQTT driver suite consists of two drivers:
 
 </div>
 
-<div style="page-break-after: always"></div>
-
 # <span style="color:#660066">System Requirements</span>
 
 - Control4 OS 3.3+
@@ -69,8 +67,6 @@ The MQTT driver suite consists of two drivers:
 - Manages subscriptions for connected child drivers
 - Automatic reconnection on disconnect
 - Message caching for late-subscribing devices
-
-<div style="page-break-after: always"></div>
 
 # <span style="color:#660066">Installer Setup</span>
 
@@ -186,8 +182,6 @@ of the current version.
 
 - **Broker Connected** - Check if the broker is connected or disconnected
 
-<div style="page-break-after: always"></div>
-
 # <span style="color:#660066">Support</span>
 
 If you have any questions or issues integrating this driver with Control4, you
@@ -196,8 +190,6 @@ can file an issue on GitHub:
 https://github.com/finitelabs/control4-mqtt/issues/new
 
 <a href="https://www.buymeacoffee.com/derek.miller" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
-
-<div style="page-break-after: always"></div>
 
 # <span style="color:#660066">Changelog</span>
 
