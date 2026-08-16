@@ -18,6 +18,18 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Removed
 -->
 
+<!-- #ifndef DRIVERCENTRAL -->
+
+## Unreleased
+
+### Fixed
+
+- Fixed an automatic update sometimes leaving companion drivers on the previous
+  version until the next update, which could make them stop responding in the
+  meantime.
+
+<!-- #endif -->
+
 ## v20260415 - 2026-04-15
 
 ### Fixed
