@@ -4,6 +4,7 @@
 --- @field _state number|nil Current sensor value.
 --- @field sensorType string The sensor type (TEMPERATURE or HUMIDITY).
 
+require("lib.utils")
 local log = require("lib.logging")
 local bindings = require("lib.bindings")
 local values = require("lib.values")
@@ -108,17 +109,16 @@ function MqttSensor:sendValue(value)
     return
   end
 
-  local params = { VALUE = value }
-
+  local scale
   if self.sensorType == "TEMPERATURE" then
-    params.SCALE = self:getTemperatureScale()
-    log:debug("Sending temperature value: %s %s to binding %s", value, params.SCALE, binding.bindingId)
+    scale = self:getTemperatureScale()
+    log:debug("Sending temperature value: %s %s to binding %s", value, scale, binding.bindingId)
   elseif self.sensorType == "HUMIDITY" then
-    params.SCALE = "PERCENT"
+    scale = "PERCENT"
     log:debug("Sending humidity value: %s to binding %s", value, binding.bindingId)
   end
 
-  SendToProxy(binding.bindingId, "VALUE_CHANGED", params)
+  SendToProxy(binding.bindingId, "VALUE_CHANGED", SensorValueParams(value, scale))
 end
 
 --- Register the sensor binding and handlers.
