@@ -27,6 +27,9 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Fixed an automatic update sometimes leaving companion drivers on the previous
   version until the next update, which could make them stop responding in the
   meantime.
+- Fixed an MQTT event leaving a bound light stalled part way through a ramp
+  instead of toggling it. Event button links now send the same command pair a
+  Control4 keypad sends for a tap.
 
 <!-- #endif -->
 
