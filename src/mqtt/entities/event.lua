@@ -125,7 +125,7 @@ function MqttEvent:_sendButtonPress()
 
   -- What a Control4 keypad emits for a tap. DO_CLICK and DO_RELEASE are the two
   -- mutually exclusive terminations of a press: a bound load reads DO_RELEASE as
-  -- the end of a hold, which freezes the ramp DO_PUSH just started.
+  -- the end of a hold, so it must not follow.
   log:debug("Sending DO_PUSH then DO_CLICK from binding %s", binding.bindingId)
   SendToProxy(binding.bindingId, "DO_PUSH", {}, "COMMAND")
   SendToProxy(binding.bindingId, "DO_CLICK", {}, "COMMAND")
