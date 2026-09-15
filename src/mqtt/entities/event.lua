@@ -1,6 +1,6 @@
 --- MQTT Event entity.
 --- Handles incoming MQTT events and triggers Control4 buttons/keypads.
---- Creates a BUTTON_LINK binding as a consumer that sends DO_CLICK to connected devices.
+--- Creates a BUTTON_LINK binding as a consumer that sends DO_PUSH then DO_CLICK to connected devices.
 --- Compatible with Home Assistant MQTT Event integration.
 --- @class MqttEvent:MqttEntity
 --- @field _state string|nil The last event type received.
@@ -109,24 +109,26 @@ function MqttEvent:_processValue(value, rawPayload)
   events:fire(self.EVENTS_NAMESPACE, self:getEventKey())
   log:info("Event '%s' triggered: %s", self:getName(), eventType)
 
-  -- Send DO_CLICK to bound devices
-  self:_sendButtonClick()
+  -- Send DO_PUSH then DO_CLICK to bound devices
+  self:_sendButtonPress()
 
   return true
 end
 
 --- Send button press commands to devices bound to this event's BUTTON_LINK binding.
-function MqttEvent:_sendButtonClick()
+function MqttEvent:_sendButtonPress()
   local binding = bindings:getDynamicBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
   if binding == nil then
     log:debug("Event '%s' - no binding registered", self:getName())
     return
   end
 
-  log:debug("Sending DO_CLICK and DO_PUSH/DO_RELEASE from binding %s", binding.bindingId)
-  SendToProxy(binding.bindingId, "DO_CLICK", {}, "COMMAND")
+  -- What a Control4 keypad emits for a tap. DO_CLICK and DO_RELEASE are the two
+  -- mutually exclusive terminations of a press: a bound load reads DO_RELEASE as
+  -- the end of a hold, which freezes the ramp DO_PUSH just started.
+  log:debug("Sending DO_PUSH then DO_CLICK from binding %s", binding.bindingId)
   SendToProxy(binding.bindingId, "DO_PUSH", {}, "COMMAND")
-  SendToProxy(binding.bindingId, "DO_RELEASE", {}, "COMMAND")
+  SendToProxy(binding.bindingId, "DO_CLICK", {}, "COMMAND")
 end
 
 --- Register the BUTTON_LINK binding (consumer) and Control4 event.
