@@ -4,6 +4,7 @@
 --- @field _state any Current variable value.
 --- @field variableType string The C4 variable type.
 
+require("lib.utils")
 local log = require("lib.logging")
 local values = require("lib.values")
 local MqttEntity = require("mqtt.entities.base")
@@ -60,6 +61,11 @@ end
 --- @param rawPayload string The original raw payload.
 --- @return boolean changed Whether the value changed.
 function MqttVariable:_processValue(value, rawPayload)
+  if (self.variableType == "FLOAT" or self.variableType == "NUMBER") and tofinite(value) == nil then
+    log:warn("Invalid %s value for variable '%s': %s", self.variableType, self:getName(), value)
+    return false
+  end
+
   local changed = self._state ~= value
   self._state = value
 

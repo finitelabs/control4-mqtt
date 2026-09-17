@@ -74,7 +74,7 @@ end
 --- @param rawPayload string The original raw payload.
 --- @return boolean changed Whether the value changed.
 function MqttSensor:_processValue(value, rawPayload)
-  local numValue = tonumber(value)
+  local numValue = tofinite(value)
   if numValue == nil then
     log:warn("Invalid sensor value for '%s': %s", self:getName(), value)
     return false
