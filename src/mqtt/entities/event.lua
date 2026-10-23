@@ -153,7 +153,7 @@ function MqttEvent:registerBinding()
 
   -- Register Control4 event
   local eventName = self:getEventName()
-  local eventDescription = "Fires when MQTT event '" .. self:getName() .. "' receives a matching message"
+  local eventDescription = "When NAME MQTT event '" .. self:getName() .. "' receives a matching message"
   events:getOrAddEvent(self.EVENTS_NAMESPACE, self:getEventKey(), eventName, eventDescription)
   log:debug("Registered event '%s' for event '%s'", eventName, self:getName())
 

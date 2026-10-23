@@ -30,6 +30,9 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Fixed an MQTT event leaving a bound light stalled part way through a ramp
   instead of toggling it. Event button links now send the same command pair a
   Control4 keypad sends for a tap.
+- Fixed the Device Available, Device Unavailable and event item Triggered events
+  leaving the device's name out of their script title in Composer Pro. The title
+  now names the device.
 
 <!-- #endif -->
 
