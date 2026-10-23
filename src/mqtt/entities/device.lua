@@ -199,8 +199,8 @@ function MqttDevice:registerAvailabilityEvents(hasAvailabilityTopic)
     return
   end
 
-  events:getOrAddEvent(EVENTS_NAMESPACE, "device_available", "Device Available", "When device becomes available")
-  events:getOrAddEvent(EVENTS_NAMESPACE, "device_unavailable", "Device Unavailable", "When device becomes unavailable")
+  events:getOrAddEvent(EVENTS_NAMESPACE, "device_available", "Device Available", "When NAME becomes available")
+  events:getOrAddEvent(EVENTS_NAMESPACE, "device_unavailable", "Device Unavailable", "When NAME becomes unavailable")
 
   local device = self
   conditionals:upsertConditional(EVENTS_NAMESPACE, "device_available", {
