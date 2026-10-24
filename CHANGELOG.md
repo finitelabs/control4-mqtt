@@ -32,14 +32,11 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Fixed MQTT Universal temperature sensor items not updating a bound thermostat.
 - Fixed MQTT Universal sensor and number variable items accepting a `nan` or
   `inf` payload, such as a failed probe publishes. The last good value is kept.
-
-<!-- #ifndef DRIVERCENTRAL -->
-
+  <!-- #ifndef DRIVERCENTRAL -->
 - Fixed an automatic update sometimes leaving companion drivers on the previous
   version until the next update, which could make them stop responding in the
   meantime.
-
-<!-- #endif -->
+  <!-- #endif -->
 
 ## v20260415 - 2026-04-15
 
