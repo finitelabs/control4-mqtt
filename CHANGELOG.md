@@ -18,23 +18,25 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Removed
 -->
 
-<!-- #ifndef DRIVERCENTRAL -->
-
-## Unreleased
+## v20261024 - 2026-10-24
 
 ### Fixed
 
-- Fixed an automatic update sometimes leaving companion drivers on the previous
-  version until the next update, which could make them stop responding in the
-  meantime.
-- Fixed an MQTT event leaving a bound light stalled part way through a ramp
-  instead of toggling it. Event button links now send the same command pair a
-  Control4 keypad sends for a tap.
+- Fixed an MQTT event's button link acting on one press twice, which turned a
+  bound on/off light straight back off and left a dimmer off instead of ramping
+  it. Event button links now send the same command pair a Control4 keypad sends
+  for a tap.
 - Fixed the Device Available, Device Unavailable and event item Triggered events
   leaving the device's name out of their script title in Composer Pro. The title
   now names the device.
-
-<!-- #endif -->
+- Fixed MQTT Universal temperature sensor items not updating a bound thermostat.
+- Fixed MQTT Universal sensor and number variable items accepting a `nan` or
+  `inf` payload, such as a failed probe publishes. The last good value is kept.
+  <!-- #ifndef DRIVERCENTRAL -->
+- Fixed an automatic update sometimes leaving companion drivers on the previous
+  version until the next update, which could make them stop responding in the
+  meantime.
+  <!-- #endif -->
 
 ## v20260415 - 2026-04-15
 
