@@ -265,7 +265,7 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Fixed variable restore order during driver initialization on controller
   reboot.
 
-## v20260120 - 2026-01-27
+## v20260127 - 2026-01-27
 
 ### Fixed
 
