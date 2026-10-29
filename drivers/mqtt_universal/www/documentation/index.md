@@ -118,7 +118,8 @@ Displays the DriverCentral cloud license status.
 
 ##### Automatic Updates
 
-Turns on/off the DriverCentral cloud automatic updates.
+Turns on/off the DriverCentral cloud automatic updates. Changing it on any MQTT
+Broker or MQTT Universal item changes it on all of them.
 
 <!-- #endif -->
 

@@ -18,6 +18,17 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Removed
 -->
 
+<!-- #ifdef DRIVERCENTRAL -->
+
+## Unreleased
+
+### Changed
+
+- Automatic Updates now syncs across all MQTT Broker and MQTT Universal driver
+  instances.
+
+<!-- #endif -->
+
 ## v20261024 - 2026-10-24
 
 ### Fixed
