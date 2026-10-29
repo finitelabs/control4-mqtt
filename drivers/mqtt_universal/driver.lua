@@ -20,6 +20,9 @@ local bindings = require("lib.bindings")
 local events = require("lib.events")
 local log = require("lib.logging")
 local persist = require("lib.persist")
+--#ifdef DRIVERCENTRAL
+local updateSettings = require("lib.update-settings")
+--#endif
 local values = require("lib.values")
 
 -- MQTT entity modules
@@ -668,6 +671,15 @@ end
 -- Property change handlers
 -----------------------------------------------------------------------
 
+--#ifdef DRIVERCENTRAL
+function OPC.Automatic_Updates(propertyValue)
+  log:trace("OPC.Automatic_Updates('%s')", propertyValue)
+  if gInitialized then
+    updateSettings:share("Automatic Updates", propertyValue)
+  end
+end
+--#endif
+
 function OPC.Driver_Version(propertyValue)
   log:trace("OPC.Driver_Version('%s')", propertyValue)
   C4:UpdateProperty("Driver Version", C4:GetDriverConfigInfo("version"))
@@ -930,6 +942,14 @@ end
 -----------------------------------------------------------------------
 -- Execute Command (EC) handlers
 -----------------------------------------------------------------------
+
+--#ifdef DRIVERCENTRAL
+--- An update setting changed on another item.
+function EC.SET_UPDATE_SETTING(params)
+  log:trace("EC.SET_UPDATE_SETTING(%s)", params)
+  updateSettings:take(params)
+end
+--#endif
 
 function EC.MQTT_MESSAGE(tParams)
   log:trace("EC.MQTT_MESSAGE(%s)", tParams)

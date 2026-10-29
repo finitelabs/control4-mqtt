@@ -192,16 +192,19 @@ Displays the DriverCentral cloud license status.
 
 <!-- #ifdef DRIVERCENTRAL -->
 
-Turns on/off the DriverCentral cloud automatic updates.
+Turns on/off the DriverCentral cloud automatic updates. Changing it on any MQTT
+Broker or MQTT Universal item changes it on all of them.
 
 <!-- #else -->
 
-Turns on/off the GitHub cloud automatic updates.
+Turns on/off the GitHub cloud automatic updates. Changing it on any MQTT Broker
+item changes it on all of them.
 
 ##### Update Channel
 
 Sets the update channel for which releases are considered during an automatic
-update from the GitHub repo releases.
+update from the GitHub repo releases. Changing it on any MQTT Broker item
+changes it on all of them.
 
 <!-- #endif -->
 

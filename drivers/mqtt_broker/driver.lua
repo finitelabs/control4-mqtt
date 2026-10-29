@@ -4,10 +4,6 @@ DC_X = nil
 DC_FILENAME = "mqtt_broker.c4z"
 --#else
 DRIVER_GITHUB_REPO = "finitelabs/control4-mqtt"
-DRIVER_FILENAMES = {
-  "mqtt_broker.c4z",
-  "mqtt_universal.c4z",
-}
 --#endif
 
 require("lib.utils")
@@ -16,6 +12,7 @@ require("drivers-common-public.global.lib")
 require("drivers-common-public.global.timer")
 
 local log = require("lib.logging")
+local updateSettings = require("lib.update-settings")
 --#ifndef DRIVERCENTRAL
 local githubUpdater = require("lib.github-updater")
 --#endif
@@ -33,6 +30,7 @@ local lastMessages = {}
 -- Binding ID for the MQTT_BROKER connection
 local MQTT_BROKER_BINDING = 5001
 
+--#ifndef DRIVERCENTRAL
 --- Get all MQTT driver instances sorted by device ID
 --- @return integer[] deviceIds Sorted list of device IDs
 local function getMQTTDriverIds()
@@ -45,21 +43,7 @@ local function getMQTTDriverIds()
   table.sort(ids)
   return ids
 end
-
---- Sync a property value to all other MQTT driver instances
---- Only syncs if the other instance has a different value (avoids infinite loops)
---- @param propertyName string The property name to sync
---- @param propertyValue string The property value to sync
-local function syncPropertyToOtherInstances(propertyName, propertyValue)
-  local ids = getMQTTDriverIds()
-  local myId = C4:GetDeviceID()
-  for _, deviceId in ipairs(ids) do
-    if deviceId ~= myId then
-      log:info("Syncing property '%s' = '%s' to device %d", propertyName, propertyValue, deviceId)
-      SetDeviceProperties(deviceId, { [propertyName] = propertyValue }, true)
-    end
-  end
-end
+--#endif
 
 function OnDriverInit()
   --#ifdef DRIVERCENTRAL
@@ -107,23 +91,25 @@ end
 
 function OPC.Automatic_Updates(propertyValue)
   log:trace("OPC.Automatic_Updates('%s')", propertyValue)
-  --#ifndef DRIVERCENTRAL
-  if not gInitialized then
-    return
+  if gInitialized then
+    updateSettings:share("Automatic Updates", propertyValue)
   end
-  syncPropertyToOtherInstances("Automatic Updates", propertyValue)
-  --#endif
 end
 
 --#ifndef DRIVERCENTRAL
 function OPC.Update_Channel(propertyValue)
   log:trace("OPC.Update_Channel('%s')", propertyValue)
-  if not gInitialized then
-    return
+  if gInitialized then
+    updateSettings:share("Update Channel", propertyValue)
   end
-  syncPropertyToOtherInstances("Update Channel", propertyValue)
 end
 --#endif
+
+--- An update setting changed on another item.
+function EC.SET_UPDATE_SETTING(params)
+  log:trace("EC.SET_UPDATE_SETTING(%s)", params)
+  updateSettings:take(params)
+end
 
 function OPC.Driver_Version(propertyValue)
   log:trace("OPC.Driver_Version('%s')", propertyValue)
@@ -548,7 +534,12 @@ end
 function UpdateDrivers(forceUpdate)
   log:trace("UpdateDrivers(%s)", forceUpdate)
   githubUpdater
-    :updateAll(DRIVER_GITHUB_REPO, DRIVER_FILENAMES, Properties["Update Channel"] == "Prerelease", forceUpdate)
+    :updateAll(
+      DRIVER_GITHUB_REPO,
+      require("lib.driver-filenames"),
+      Properties["Update Channel"] == "Prerelease",
+      forceUpdate
+    )
     :next(function(updatedDrivers)
       if not IsEmpty(updatedDrivers) then
         log:info("Updated driver(s): %s", table.concat(updatedDrivers, ","))
