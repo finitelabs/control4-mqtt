@@ -28,6 +28,12 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   A code from Finite Labs support opens the driver's Lua tab in Composer for an
   hour; leave it blank otherwise.
 
+### Fixed
+
+- Fixed an MQTT Universal relay item running the bound relay's programming every
+  time the controller restarted. Programming now runs only when the relay opens
+  or closes.
+
 ### Changed
 
 - Automatic Updates now syncs across all MQTT Broker and MQTT Universal driver

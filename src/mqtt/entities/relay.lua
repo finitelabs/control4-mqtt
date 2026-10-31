@@ -112,6 +112,16 @@ function MqttRelay:_updateState(newState, payload)
   return true
 end
 
+--- Tell the bound relay driver the current state without firing its programming.
+--- Sends nothing while the state is unknown.
+--- @param bindingId number The relay binding ID.
+function MqttRelay:_sendCurrentState(bindingId)
+  if self._state == nil then
+    return
+  end
+  SendToProxy(bindingId, self._state and "STATE_CLOSED" or "STATE_OPENED", {}, "NOTIFY")
+end
+
 --- Publish a command to the relay.
 --- @param state boolean Target state (true = on, false = off).
 function MqttRelay:command(state)
@@ -174,6 +184,8 @@ function MqttRelay:registerBinding()
           entity:command(false)
         end)
       end
+    elseif strCommand == "GET_STATE" then
+      entity:_sendCurrentState(binding.bindingId)
     else
       log:warn("Unhandled command from relay binding %s: %s", idBinding, strCommand)
     end
@@ -182,9 +194,8 @@ function MqttRelay:registerBinding()
   -- Register OBC handler for binding changes
   OBC[binding.bindingId] = function(idBinding, _strClass, bIsBound, otherDeviceId, _otherBindingId)
     log:debug("OBC[%s] bIsBound=%s otherDeviceId=%s", idBinding, bIsBound, otherDeviceId)
-    if bIsBound and entity._state ~= nil then
-      local bindingState = entity._state and "CLOSED" or "OPENED"
-      SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
+    if bIsBound then
+      entity:_sendCurrentState(binding.bindingId)
     end
   end
 
