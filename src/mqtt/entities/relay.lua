@@ -2,6 +2,7 @@
 --- Handles on/off state, command publishing, and relay binding notifications.
 --- @class MqttRelay:MqttEntity
 --- @field _state boolean|nil Current relay state (true = on, false = off).
+--- @field _commandSent boolean|nil Whether a command was sent while the state was unknown.
 
 local log = require("lib.logging")
 local bindings = require("lib.bindings")
@@ -85,15 +86,15 @@ end
 
 --- Update the relay state and notify binding.
 --- The first state heard since start or a broker rebind is what the relay
---- already was, so it is sent silently unless a command set it.
+--- already was, so it is sent silently unless a command was sent before it.
 --- @param newState boolean The new state.
 --- @param payload string|nil The raw payload (for display).
---- @param commanded boolean|nil Whether a command from Control4 set this state.
 --- @return boolean changed Whether the state changed.
-function MqttRelay:_updateState(newState, payload, commanded)
-  local wasKnown = self._state ~= nil
+function MqttRelay:_updateState(newState, payload)
+  local eventful = self._state ~= nil or self._commandSent
   local changed = self._state ~= newState
   self._state = newState
+  self._commandSent = nil
 
   if not changed then
     return false
@@ -107,7 +108,7 @@ function MqttRelay:_updateState(newState, payload, commanded)
   -- Notify binding
   local binding = bindings:getDynamicBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
   if binding then
-    if wasKnown or commanded then
+    if eventful then
       local bindingState = newState and "CLOSED" or "OPENED"
       log:debug("Sending relay state %s to binding %s", bindingState, binding.bindingId)
       SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
@@ -142,16 +143,25 @@ function MqttRelay:command(state)
 
   log:info("Publishing relay command: %s -> %s", self.item.commandTopic, payload)
   self:publish(self.item.commandTopic, payload)
+  if self._state == nil then
+    self._commandSent = true
+  end
 
   -- Optimistic update
   if self:isOptimistic() then
-    self:_updateState(state, nil, true)
+    self:_updateState(state, nil)
   end
 end
 
 --- Toggle the relay state.
 function MqttRelay:toggle()
   self:command(not self._state)
+end
+
+--- Reset the cached state, along with any command sent while it was unknown.
+function MqttRelay:reset()
+  MqttEntity.reset(self)
+  self._commandSent = nil
 end
 
 --- Register the relay binding and RFP/OBC handlers.

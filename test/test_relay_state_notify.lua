@@ -224,6 +224,33 @@ do
   T.eq("and the next one sends OPENED", relayCommands(id), { "CLOSED", "OPENED" })
 end
 
+-- With a state topic the relay waits for the device's echo, so the command's
+-- state is the first one heard when nothing was retained.
+do
+  local relay, id = newRelay()
+  bind(id)
+  command(id, "ON")
+  relay:onMessage("ON")
+  T.eq("a command's echo from an unknown state sends CLOSED", relayCommands(id), { "CLOSED" })
+  relay:onMessage("OFF")
+  T.eq("and a later change sends OPENED", relayCommands(id), { "CLOSED", "OPENED" })
+end
+
+do
+  local relay, id = newRelay()
+  command(id, "TOGGLE")
+  relay:onMessage("ON")
+  T.eq("a TOGGLE's echo from an unknown state sends CLOSED", relayCommands(id), { "CLOSED" })
+end
+
+do
+  local relay, id = newRelay()
+  command(id, "ON")
+  relay:reset()
+  relay:onMessage("ON")
+  T.eq("a reset forgets the command, so the first state is silent", relayCommands(id), { "STATE_CLOSED" })
+end
+
 --------------------------------------------------------------------------------
 T.section("commands from Control4 publish as before")
 --------------------------------------------------------------------------------
