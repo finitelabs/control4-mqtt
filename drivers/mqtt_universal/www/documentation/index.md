@@ -141,6 +141,15 @@ Sets the logging level. Default is `Info`.
 
 Sets the logging mode. Default is `Off`.
 
+<!-- #ifdef DRIVERCENTRAL -->
+
+##### Support Code
+
+Leave it blank unless Finite Labs support gives you a code: it opens Composer's
+Lua tab to this driver for an hour.
+
+<!-- #endif -->
+
 #### Availability Settings
 
 These settings control global device availability for all items in the driver.
