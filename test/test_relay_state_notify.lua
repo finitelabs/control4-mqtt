@@ -8,10 +8,8 @@
 --
 -- A RELAY provider has two ways to report state. CLOSED/OPENED fire the bound
 -- relay driver's programming events, so they belong to a real change only.
--- STATE_CLOSED/STATE_OPENED set the same state silently, and are what a bind
--- and a GET_STATE get: neither is a change. Binding used to send the eventful
--- form, so the bound driver's programming ran at every bind and every
--- controller start, and GET_STATE went unanswered.
+-- STATE_CLOSED/STATE_OPENED set the same state silently, and are what a bind,
+-- a GET_STATE and the first state heard from MQTT get: none is a change.
 
 local T = require("testlib")
 
@@ -167,27 +165,63 @@ do
 end
 
 --------------------------------------------------------------------------------
-T.section("a real change from MQTT still fires programming")
+T.section("the first state heard after a restart is reported silently")
+--------------------------------------------------------------------------------
+
+-- At controller start the entity is rebuilt with no state and Director binds it
+-- before the broker connects, so the bind sends nothing and the state arrives
+-- afterwards as the retained message.
+do
+  local relay, id = newRelay()
+  bind(id)
+  relay:onMessage("ON")
+  T.eq("bind then a first ON sends STATE_CLOSED", relayCommands(id), { "STATE_CLOSED" })
+  T.eq("the state variable is set", relay:getStateText(), "On")
+end
+
+do
+  local relay, id = newRelay()
+  bind(id)
+  relay:onMessage("OFF")
+  T.eq("bind then a first OFF sends STATE_OPENED", relayCommands(id), { "STATE_OPENED" })
+end
+
+-- Rebinding the broker resets every entity, which is the same unknown state.
+do
+  local relay, id = newRelay()
+  relay:onMessage("ON")
+  relay:reset()
+  sent = {}
+  relay:onMessage("ON")
+  T.eq("the first state after a reset sends STATE_CLOSED", relayCommands(id), { "STATE_CLOSED" })
+end
+
+--------------------------------------------------------------------------------
+T.section("a real change still fires programming")
 --------------------------------------------------------------------------------
 
 do
   local relay, id = newRelay()
   relay:onMessage("ON")
+  sent = {}
   relay:onMessage("OFF")
   relay:onMessage("OFF")
   relay:onMessage("ON")
   T.eq(
-    "each change sends CLOSED or OPENED, a repeat sends nothing",
+    "each change from MQTT sends CLOSED or OPENED, a repeat sends nothing",
     relayCommands(id),
-    { "CLOSED", "OPENED", "CLOSED" }
+    { "OPENED", "CLOSED" }
   )
 end
 
+-- A command is the user changing the relay, even with no state known yet.
 do
   local relay, id = newRelay({ optimistic = "Yes" })
   command(id, "ON")
-  T.eq("an optimistic command is a change and sends CLOSED", relayCommands(id), { "CLOSED" })
+  T.eq("an optimistic command from an unknown state sends CLOSED", relayCommands(id), { "CLOSED" })
   T.eq("the state is now on", relay:getState(), true)
+  command(id, "OFF")
+  T.eq("and the next one sends OPENED", relayCommands(id), { "CLOSED", "OPENED" })
 end
 
 --------------------------------------------------------------------------------

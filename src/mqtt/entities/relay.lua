@@ -84,10 +84,14 @@ function MqttRelay:_processValue(value, rawPayload)
 end
 
 --- Update the relay state and notify binding.
+--- The first state heard since start or a broker rebind is what the relay
+--- already was, so it is sent silently unless a command set it.
 --- @param newState boolean The new state.
 --- @param payload string|nil The raw payload (for display).
+--- @param commanded boolean|nil Whether a command from Control4 set this state.
 --- @return boolean changed Whether the state changed.
-function MqttRelay:_updateState(newState, payload)
+function MqttRelay:_updateState(newState, payload, commanded)
+  local wasKnown = self._state ~= nil
   local changed = self._state ~= newState
   self._state = newState
 
@@ -103,9 +107,13 @@ function MqttRelay:_updateState(newState, payload)
   -- Notify binding
   local binding = bindings:getDynamicBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
   if binding then
-    local bindingState = newState and "CLOSED" or "OPENED"
-    log:debug("Sending relay state %s to binding %s", bindingState, binding.bindingId)
-    SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
+    if wasKnown or commanded then
+      local bindingState = newState and "CLOSED" or "OPENED"
+      log:debug("Sending relay state %s to binding %s", bindingState, binding.bindingId)
+      SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
+    else
+      self:_sendCurrentState(binding.bindingId)
+    end
   end
 
   log:info("Relay '%s' state: %s", self:getName(), stateText)
@@ -137,7 +145,7 @@ function MqttRelay:command(state)
 
   -- Optimistic update
   if self:isOptimistic() then
-    self:_updateState(state, nil)
+    self:_updateState(state, nil, true)
   end
 end
 
