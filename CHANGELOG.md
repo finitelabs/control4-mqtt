@@ -27,12 +27,10 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Added a `Support Code` property to the MQTT Broker and MQTT Universal drivers.
   A code from Finite Labs support opens the driver's Lua tab in Composer for an
   hour; leave it blank otherwise.
-  <!-- #ifdef DRIVERCENTRAL -->
 - Added a `Cloud Monitoring` property, Enabled by default, and a
   `Diagnostics Snapshot` action to every driver. Cloud Monitoring sends Finite
   Labs an hourly report of the driver's memory use and a report of each error it
   hits; the documentation says what they hold.
-  <!-- #endif -->
 
 ### Fixed
 
