@@ -232,6 +232,23 @@ Lua tab to this driver for an hour.
 
 <!-- #endif -->
 
+<!-- #ifdef DRIVERCENTRAL -->
+
+##### Cloud Monitoring \[ Disabled | **_Enabled_** \]
+
+When Enabled, the driver sends Finite Labs a short report once an hour, and a
+report of each error it hits, at most 10 a minute. We use them to find and fix
+problems in the driver. Set it to Disabled to send nothing.
+
+A report holds the controller's MAC address and OS version, the driver's name,
+version, device ID and DriverCentral license status, how much memory the driver
+uses, and the sizes of its largest internal tables. An error report also holds
+the error message and where in the driver it happened. Before a message is sent,
+anything in it that looks like a password, token, key, network address or email
+address is removed.
+
+<!-- #endif -->
+
 #### MQTT Settings
 
 ##### Broker Address
@@ -271,6 +288,15 @@ Manually trigger a reconnection to the MQTT broker.
 
 Trigger all MQTT drivers to update from the latest release on GitHub, regardless
 of the current version.
+
+<!-- #endif -->
+
+<!-- #ifdef DRIVERCENTRAL -->
+
+##### Diagnostics Snapshot
+
+Prints a report in the Lua output, and sends it to Finite Labs only while Cloud
+Monitoring is Enabled.
 
 <!-- #endif -->
 

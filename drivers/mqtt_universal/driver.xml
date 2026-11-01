@@ -95,6 +95,18 @@
         <password>true</password>
       </property>
       <!-- #endif -->
+      <!-- #ifdef DRIVERCENTRAL -->
+      <property>
+        <name>Cloud Monitoring</name>
+        <type>LIST</type>
+        <default>Enabled</default>
+        <items>
+          <item>Disabled</item>
+          <item>Enabled</item>
+        </items>
+        <description>Sends memory and error reports to Finite Labs so we can fix driver problems.</description>
+      </property>
+      <!-- #endif -->
       <!-- Global Availability Settings -->
       <property>
         <name>Availability Settings</name>
@@ -376,6 +388,14 @@
         <description>Scale of temperature values from MQTT (only for TEMPERATURE items)</description>
       </property>
     </properties>
+    <!-- #ifdef DRIVERCENTRAL -->
+    <actions>
+      <action>
+        <name>Diagnostics Snapshot</name>
+        <command>DiagnosticsSnapshot</command>
+      </action>
+    </actions>
+    <!-- #endif -->
     <commands>
       <command>
         <name>Press</name>
