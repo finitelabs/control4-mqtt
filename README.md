@@ -72,9 +72,6 @@ The MQTT driver suite consists of two drivers:
 
 ## Driver Installation
 
-Driver installation and setup are similar to most other ip-based drivers. Below
-is an outline of the basic steps for your convenience.
-
 1. Download the latest `control4-mqtt.zip` from
    [Github](https://github.com/finitelabs/control4-mqtt/releases/latest).
 
