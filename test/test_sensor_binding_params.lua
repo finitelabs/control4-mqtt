@@ -6,11 +6,11 @@
 -- or:
 --   ./test/run_test.sh test_sensor_binding_params.lua
 --
--- The helpers' own behaviour is covered by test_sensor_params.lua. What is
--- checked here is the call site: C4-THERM reads a bound temperature from
--- CELSIUS and never looks at VALUE or SCALE, and crashes at its driver.lua:2982
--- when TIMESTAMP is absent, so the {VALUE, SCALE} payload this entity used to
--- send could not be ingested at all.
+-- The helpers' own behavior is covered by test_sensor_params.lua. What is
+-- checked here is the call site: a thermostat bound to a sensor reads the
+-- temperature from CELSIUS and never looks at VALUE or SCALE, and crashes when
+-- TIMESTAMP is absent, so the {VALUE, SCALE} payload this entity used to send
+-- could not be ingested at all.
 --
 -- Regression test for DRV-121.
 
@@ -65,7 +65,7 @@ T.eq("goes to the sensor binding", celsius.idBinding, BINDING_ID)
 T.eq("as VALUE_CHANGED", celsius.command, "VALUE_CHANGED")
 T.eq("VALUE is the measured number", celsius.params.VALUE, 21.5)
 T.eq("SCALE names the measured scale", celsius.params.SCALE, "CELSIUS")
-T.eq("CELSIUS is what C4-THERM reads", celsius.params.CELSIUS, 21.5)
+T.eq("CELSIUS is what a bound thermostat reads", celsius.params.CELSIUS, 21.5)
 T.eq("FAHRENHEIT is converted alongside", celsius.params.FAHRENHEIT, 70.7)
 
 --------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ local fahrenheit = sendAndCapture(temperatureItem("Fahrenheit"), 70.7)
 
 T.eq("VALUE is left as measured", fahrenheit.params.VALUE, 70.7)
 T.eq("SCALE says so", fahrenheit.params.SCALE, "FAHRENHEIT")
-T.eq("CELSIUS is converted for C4-THERM", fahrenheit.params.CELSIUS, 21.5)
+T.eq("CELSIUS is converted for a bound thermostat", fahrenheit.params.CELSIUS, 21.5)
 T.eq("FAHRENHEIT round-trips", fahrenheit.params.FAHRENHEIT, 70.7)
 
 --------------------------------------------------------------------------------
@@ -99,10 +99,10 @@ T.eq("no FAHRENHEIT", humidity.params.FAHRENHEIT, nil)
 T.section("TIMESTAMP is present and fresh on every payload")
 --------------------------------------------------------------------------------
 
--- C4-THERM discards a reading stamped older than 900 seconds and crashes on one
--- with no stamp at all, so both properties are asserted rather than presence
--- alone. Bounded generously: what is under test is that the stamp is epoch
--- seconds from os.time(), not the clock.
+-- A bound thermostat discards a reading stamped older than 900 seconds and
+-- crashes on one with no stamp at all, so both properties are asserted rather
+-- than presence alone. Bounded generously: what is under test is that the stamp
+-- is epoch seconds from os.time(), not the clock.
 local now = os.time()
 for _, case in ipairs({
   { what = "celsius", captured = celsius },
@@ -112,7 +112,7 @@ for _, case in ipairs({
   local stamp = case.captured.params.TIMESTAMP
   T.check(case.what .. ": TIMESTAMP is a number", type(stamp) == "number", type(stamp))
   T.check(
-    case.what .. ": TIMESTAMP is epoch seconds within C4-THERM's 900s gate",
+    case.what .. ": TIMESTAMP is epoch seconds within a thermostat's 900s gate",
     type(stamp) == "number" and stamp > now - 900 and stamp <= now,
     stamp
   )
