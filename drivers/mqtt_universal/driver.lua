@@ -669,6 +669,10 @@ function OnDriverLateInit()
   SendToProxy(MQTT_BINDING, "GET_STATUS", {}, "NOTIFY")
 end
 
+--#ifdef DRIVERCENTRAL
+OnDriverLateInit = diagnostics:wrapLateInit(OnDriverLateInit)
+--#endif
+
 -----------------------------------------------------------------------
 -- Property change handlers
 -----------------------------------------------------------------------
