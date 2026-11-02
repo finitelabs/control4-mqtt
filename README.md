@@ -85,8 +85,6 @@ The MQTT driver suite consists of two drivers:
    > ⚠️ A **_single_** broker driver instance is required per broker you wish to
    > connect to.
 
-   ![Search Drivers](images/search-drivers.png)
-
 1. Configure the [Device Settings](#device-settings) with the connection
    information.
 
