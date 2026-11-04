@@ -19,12 +19,8 @@ ______________________________________________________________________
 
 # <span style="color:#660066">Overview</span>
 
-<!-- #ifndef DRIVERCENTRAL -->
-
 > DISCLAIMER: This software is neither affiliated with nor endorsed by either
 > Control4 or MQTT.
-
-<!-- #endif -->
 
 The MQTT Broker driver connects Control4 to an MQTT broker (such as Mosquitto,
 HiveMQ, or other MQTT-compatible platforms). It manages the connection and
