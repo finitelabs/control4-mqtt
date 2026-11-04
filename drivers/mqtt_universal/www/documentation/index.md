@@ -19,12 +19,8 @@ ______________________________________________________________________
 
 # <span style="color:#660066">Overview</span>
 
-<!-- #ifndef DRIVERCENTRAL -->
-
 > DISCLAIMER: This software is neither affiliated with nor endorsed by either
 > Control4 or MQTT.
-
-<!-- #endif -->
 
 The MQTT Universal driver is a comprehensive solution for integrating MQTT
 devices and variables with Control4. It allows you to dynamically create relays,
