@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { --accent: #660066; --glow: var(--accent); }
+  :root { --accent: #660066; --glow: #A43CA4; }
   html, body { margin: 0; padding: 0; }
   body { width: 2048px; height: 424px; overflow: hidden; position: relative; font-family: Inter, -apple-system, "Segoe UI", sans-serif;
     background:
@@ -20,17 +20,19 @@
   .chip.line { color: #fff; border: 2px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.04); font-weight: 500; }
   .sub { position: absolute; left: 104px; top: 334px; color: #c3c8d2; font-size: 34px; font-weight: 400; letter-spacing: -0.005em; white-space: nowrap; }
   .sub em { font-style: normal; color: #fff; font-weight: 600; }
-  .mark { position: absolute; left: 1560px; top: 62px; width: 300px; height: 300px; object-fit: contain; filter: drop-shadow(0 18px 40px rgba(0,0,0,0.45)); }
+  .mark { position: absolute; left: 1589px; top: 88px; width: 242px; height: 248px; object-fit: contain; filter: drop-shadow(0 18px 40px rgba(0,0,0,0.45)); }
+  .note { position: absolute; left: 104px; bottom: 14px; color: #7d8494; font-size: 15px; letter-spacing: 0; white-space: nowrap; }
 </style></head>
 <body>
 <div class="dots"></div>
 <img class="mark" src="../assets/brand-mark.png" alt="" onerror="this.remove()">
 <img class="fl" src="../assets/finite-labs-logo.png" alt="">
-<h1>Driver Name in Control4.</h1>
+<h1>MQTT in Control4.</h1>
 <div class="row">
-  <div class="chip solid">What it controls</div>
+  <div class="chip solid">Any MQTT broker</div>
   <div class="chip line">Control4 OS 3.3+</div>
-  <div class="chip line">Local network</div>
+  <div class="chip line">No cloud</div>
 </div>
-<div class="sub">The devices it covers, with <em>one feature</em> and <em>another</em>.</div>
+<div class="sub">Relays, contacts, buttons and variables from <em>MQTT topics</em>.</div>
+<div class="note">MQTT and Control4 are trademarks of their owners, which are not affiliated with, and do not endorse, this product.</div>
 </body></html>
