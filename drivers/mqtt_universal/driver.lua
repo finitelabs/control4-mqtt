@@ -6,11 +6,6 @@
 --- over MQTT topics. Each item can be configured with state and command topics,
 --- payload mappings, and JSONPath extraction for complex payloads.
 
---#ifdef DRIVERCENTRAL
-DC_PID = 857
-DC_X = nil
-DC_FILENAME = "mqtt_universal.c4z"
---#endif
 require("lib.utils")
 require("drivers-common-public.global.handlers")
 require("drivers-common-public.global.lib")
@@ -21,6 +16,7 @@ local events = require("lib.events")
 local log = require("lib.logging")
 local persist = require("lib.persist")
 --#ifdef DRIVERCENTRAL
+local drivercentral = require("lib.drivercentral")
 local updateSettings = require("lib.update-settings")
 local supportCode = require("lib.support-code")
 local diagnostics = require("lib.diagnostics")
@@ -617,8 +613,7 @@ end
 
 function OnDriverInit()
   --#ifdef DRIVERCENTRAL
-  require("cloud-client-byte")
-  C4:AllowExecute(false)
+  drivercentral:startClient()
   --#else
   C4:AllowExecute(true)
   --#endif
