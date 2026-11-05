@@ -1,12 +1,13 @@
 # DriverCentral images
 
-Marketing images for the MQTT listing (DriverCentral product 857). Each image is an HTML page rendered to PNG, and the rendered PNGs sit next to their sources.
+Marketing images for the MQTT listing (DriverCentral product 857). Each banner and photo is an HTML page rendered to PNG, and the rendered PNGs sit next to their sources. The product card comes from `make icons`.
 
 | Path | Size | Used for |
 | --- | --- | --- |
 | `banners/spotlight-4096x848` | 4096x848 | DriverCentral homepage spotlight banner (emailed to DriverCentral, not uploaded) |
 | `banners/launch-post-2400x1200` | 2400x1200 | Launch posts (c4forums, Reddit, Discord) |
-| `banners/facts-strip-2400x200` | 2400x200 | The first image in the listing's description: four facts in a row |
+| `banners/facts-strip-2400x136` | 2400x136 | The first image in the listing's description: four facts in a row, three-quarters of the width, on a transparent background. Put it in a plain paragraph in the description, not a heading, which adds its own spacing |
+| `product-card-300x300.png` | 300x300 | The listing's product card, written by `make icons` from `resources/Driver Icons.sketch` |
 
 `assets/` holds what the pages share: the Finite Labs logo, `scene.js`, which draws the banners' art, and MQTT's icon as `brand-mark.png`: `png/mqtt-icon-solid.png` in MQTT's official graphics (https://github.com/mqtt/mqttorg-graphics at a8eafc36), the white icon on its purple tile, with only its transparent margin trimmed. That repo allows the graphics to indicate use or support of the MQTT protocol in a product, without suggesting endorsement.
 
