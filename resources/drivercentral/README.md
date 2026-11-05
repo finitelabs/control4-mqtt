@@ -8,7 +8,9 @@ Marketing images for the MQTT listing (DriverCentral product 857). Each image is
 | `banners/launch-post-2400x1200` | 2400x1200 | Launch posts (c4forums, Reddit, Discord) |
 | `banners/facts-strip-2400x200` | 2400x200 | The first image in the listing's description: four facts in a row |
 
-`assets/` holds what the pages share: the Finite Labs logo, and MQTT's icon as `brand-mark.png` in white. The icon is the one in MQTT's official graphics (`svg/mqtt-icon-transparent.svg` in https://github.com/mqtt/mqttorg-graphics at a8eafc36), exported from this repo's `resources/Driver Icons.sketch`. That repo allows the graphics to indicate use or support of the MQTT protocol in a product, without suggesting endorsement.
+`assets/` holds what the pages share: the Finite Labs logo, `scene.js`, which draws the banners' art, and MQTT's icon as `brand-mark.png`: `png/mqtt-icon-solid.png` in MQTT's official graphics (https://github.com/mqtt/mqttorg-graphics at a8eafc36), the white icon on its purple tile, with only its transparent margin trimmed. That repo allows the graphics to indicate use or support of the MQTT protocol in a product, without suggesting endorsement.
+
+The banners' art is `topics`: messages fanning out from the logo to five topics, set on each banner's `<svg class="scene">`. The template's DriverCentral README lists the styles, and the headline, chips and subtitle shrink until they end clear of the art.
 
 ## Rendering
 
