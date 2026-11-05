@@ -1,8 +1,4 @@
---#ifdef DRIVERCENTRAL
-DC_PID = 857
-DC_X = nil
-DC_FILENAME = "mqtt_broker.c4z"
---#else
+--#ifndef DRIVERCENTRAL
 DRIVER_GITHUB_REPO = "finitelabs/control4-mqtt"
 --#endif
 
@@ -14,6 +10,7 @@ require("drivers-common-public.global.timer")
 local log = require("lib.logging")
 local updateSettings = require("lib.update-settings")
 --#ifdef DRIVERCENTRAL
+local drivercentral = require("lib.drivercentral")
 local supportCode = require("lib.support-code")
 local diagnostics = require("lib.diagnostics")
 --#endif
@@ -51,8 +48,7 @@ end
 
 function OnDriverInit()
   --#ifdef DRIVERCENTRAL
-  require("cloud-client-byte")
-  C4:AllowExecute(false)
+  drivercentral:startClient()
   --#else
   C4:AllowExecute(true)
   --#endif
@@ -91,6 +87,13 @@ function OnDriverLateInit()
 
   gInitialized = true
   Connect()
+  --#ifdef DRIVERCENTRAL
+  -- Connect() refuses while the gate holds the broker stopped, and reconnects once a license is back.
+  drivercentral:startGate(function(licensed)
+    log:info(licensed and "License active; connecting to the broker" or "No active license; disconnecting the broker")
+    Connect()
+  end)
+  --#endif
 end
 
 --#ifdef DRIVERCENTRAL
@@ -283,8 +286,8 @@ function Connect()
   end
 
   --#ifdef DRIVERCENTRAL
-  if DC_X == 0 then
-    updateStatus("No active license")
+  if not drivercentral:licensed() then
+    updateStatus(drivercentral.UNLICENSED_STATUS)
     return
   end
   --#endif

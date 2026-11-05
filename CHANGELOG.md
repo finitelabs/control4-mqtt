@@ -34,6 +34,9 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 
 ### Fixed
 
+- Fixed a licensed MQTT Broker staying disconnected until Reconnect when it lost
+  the broker while the DriverCentral Cloud driver was not answering. It now
+  reconnects on its usual retry.
 - Fixed an MQTT Universal relay item running the bound relay's programming every
   time the controller restarted. Programming now runs only when the relay opens
   or closes.
@@ -42,6 +45,9 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 
 - Automatic Updates now syncs across all MQTT Broker and MQTT Universal driver
   instances.
+- Without an active license or trial, the MQTT Broker disconnects five minutes
+  after it loads and shows `No active license`. It connects again as soon as a
+  license is active, with no Reconnect needed.
 
 <!-- #endif -->
 
