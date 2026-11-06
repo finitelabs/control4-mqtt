@@ -49,6 +49,8 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   pressing a bound button, when the driver was updated, the MQTT Broker
   reconnected or an item's settings were changed. An event item now fires only
   when a new message arrives.
+- Fixed the MQTT Broker printing its password to the Lua output when debug
+  printing was on. The password is not printed at any level now.
   <!-- #ifdef DRIVERCENTRAL -->
 - Fixed a licensed MQTT Broker staying disconnected until Reconnect when it lost
   the broker while the DriverCentral Cloud driver was not answering. It now
