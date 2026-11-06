@@ -654,7 +654,7 @@ function OnDriverLateInit()
     end
   end
   gInitialized = true
-  UpdateProperty("Driver Status", "Disconnected")
+  MqttDevice:refreshStatus()
 
   -- Re-register availability events/conditional
   local hasAvailabilityTopic = not IsEmpty(Properties["Availability Topic"])
@@ -729,8 +729,9 @@ function OPC.Availability_Topic(propertyValue)
     return
   end
 
+  MqttDevice:clearAvailability()
   if IsEmpty(propertyValue) then
-    MqttDevice:unregisterAvailabilityEvents()
+    log:info("Availability Topic cleared; availability is no longer tracked")
   else
     MqttDevice:registerAvailabilityEvents(true)
   end
@@ -940,7 +941,7 @@ OBC[MQTT_BINDING] = function(idBinding, strClass, bIsBound, otherDeviceId, other
   for _, entity in pairs(entities) do
     entity:reset()
   end
-  UpdateProperty("Driver Status", "Disconnected")
+  MqttDevice:refreshStatus()
   if bIsBound then
     SendToProxy(MQTT_BINDING, "GET_STATUS", {}, "NOTIFY")
   end

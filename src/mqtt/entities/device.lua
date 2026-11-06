@@ -15,6 +15,7 @@ local conditionals = require("lib.conditionals")
 local stateParser = require("mqtt.state_parser")
 
 local EVENTS_NAMESPACE = "MQTTUniversal"
+local AVAILABILITY_VARIABLE = "Availability Status"
 
 local MqttDevice = {
   TYPE = "DEVICE",
@@ -47,11 +48,21 @@ function MqttDevice:setConnected(connected)
   self._connected = connected
   if connected then
     log:info("MQTT broker connected")
-    UpdateProperty("Driver Status", "Connected")
   else
     log:warn("MQTT broker disconnected")
-    UpdateProperty("Driver Status", "Disconnected")
   end
+  self:refreshStatus()
+end
+
+--- Show the broker link and the device's availability in Driver Status.
+function MqttDevice:refreshStatus()
+  local status = "Connected"
+  if not self._connected then
+    status = "Disconnected"
+  elseif self._available == false then
+    status = "Device unavailable"
+  end
+  UpdateProperty("Driver Status", status)
 end
 
 --- Check if the device is available.
@@ -121,7 +132,6 @@ function MqttDevice:updateAvailability(rawPayload, config)
     return false
   end
 
-  local wasKnown = self._available ~= nil
   local available = self:parseAvailability(effectivePayload, config.payloadAvailable, config.payloadNotAvailable)
 
   if available == nil then
@@ -129,29 +139,35 @@ function MqttDevice:updateAvailability(rawPayload, config)
     return false
   end
 
-  if self._available == available then
+  self._available = available
+  self:refreshStatus()
+
+  local stored = values:getValue(AVAILABILITY_VARIABLE)
+  if not values:update(AVAILABILITY_VARIABLE, available and "Available" or "Unavailable", "STRING") then
     return false
   end
 
-  self._available = available
-
-  -- Update availability variable
-  values:update("Availability Status", available and "Available" or "Unavailable", "STRING")
-
-  if available then
-    UpdateProperty("Driver Status", "Connected")
-    if wasKnown then
-      events:fire(EVENTS_NAMESPACE, "device_available")
-    end
-  else
-    if wasKnown then
-      UpdateProperty("Driver Status", "Device unavailable")
-      events:fire(EVENTS_NAMESPACE, "device_unavailable")
-    end
+  -- The variable outlasts a restart, so a change while the controller was down fires too. The first
+  -- availability heard, with nothing before it, sets it silently.
+  if not IsEmpty(stored and stored.value) then
+    events:fire(EVENTS_NAMESPACE, available and "device_available" or "device_unavailable")
   end
 
   log:info("Device availability: %s", available and "available" or "unavailable")
   return true
+end
+
+--- Forget the device's availability, as when the Availability Topic changes: its readings go blank and Driver
+--- Status shows the broker link alone.
+function MqttDevice:clearAvailability()
+  self._available = nil
+  self._lastAvailabilityPayload = nil
+  UpdateProperty("Availability Topic Value", "")
+  UpdateProperty("Availability Value Path Result", "")
+  if values:getValue(AVAILABILITY_VARIABLE) ~= nil then
+    values:update(AVAILABILITY_VARIABLE, "", "STRING")
+  end
+  self:refreshStatus()
 end
 
 --- Re-evaluate availability with current payload and new config.
@@ -192,11 +208,18 @@ function MqttDevice:subscribeToAvailability(topic, deviceId)
   self._previousAvailabilityTopic = topic
 end
 
---- Register availability events and conditional.
+--- Declare the availability events and conditional, and create the Availability Status variable if missing.
+--- Once declared they stay with no topic set too: deleting an event deletes the programming on it.
 --- @param hasAvailabilityTopic boolean Whether availability topic is configured.
 function MqttDevice:registerAvailabilityEvents(hasAvailabilityTopic)
-  if not hasAvailabilityTopic then
+  if
+    not hasAvailabilityTopic and Select(conditionals:getConditionals(), EVENTS_NAMESPACE, "device_available") == nil
+  then
     return
+  end
+
+  if values:getValue(AVAILABILITY_VARIABLE) == nil then
+    values:update(AVAILABILITY_VARIABLE, "", "STRING")
   end
 
   events:getOrAddEvent(EVENTS_NAMESPACE, "device_available", "Device Available", "When NAME becomes available")
@@ -220,14 +243,6 @@ function MqttDevice:registerAvailabilityEvents(hasAvailabilityTopic)
   end)
 
   log:debug("Registered availability events and conditional")
-end
-
---- Unregister availability events and conditional.
-function MqttDevice:unregisterAvailabilityEvents()
-  events:deleteEvent(EVENTS_NAMESPACE, "device_available")
-  events:deleteEvent(EVENTS_NAMESPACE, "device_unavailable")
-  conditionals:deleteConditional(EVENTS_NAMESPACE, "device_available")
-  log:debug("Unregistered availability events and conditional")
 end
 
 --- Reset all device state.
