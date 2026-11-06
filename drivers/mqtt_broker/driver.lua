@@ -29,11 +29,20 @@ local driverFilenames = require("lib.driver-filenames")
 --#endif
 
 local MQTT_BROKER_BINDING = 5001
+-- The wait between attempts doubles from the floor to the cap; the cap keeps a
+-- broker that stays down retried every 30 s.
+local RECONNECT_MIN_MS = 2 * ONE_SECOND
+local RECONNECT_MAX_MS = 30 * ONE_SECOND
+-- Only a session that lasted this long starts the waits from the floor again, so
+-- two clients that share a client id and take the session from each other back off.
+local STABLE_SESSION_S = 120
 
 local mqttClient = nil
 local isBrokerConnected = false
 -- Whether the client's connect attempt is still waiting for the broker's answer.
 local connecting = false
+local reconnectDelay = RECONNECT_MIN_MS
+local connectedAt = 0
 -- What bound items were last told; unknown at load, since after a driver update
 -- they may still think the broker is connected.
 local itemsToldConnected = nil
@@ -308,9 +317,12 @@ local function routeMessageToSubscribers(topic, payload, qos, retain)
   end
 end
 
---- Arms the next connect attempt.
+--- Arms the next connect attempt, waiting twice as long as the last up to the cap.
 local function scheduleReconnect()
-  SetTimer("reconnect", 30 * ONE_SECOND, function()
+  local delay = reconnectDelay
+  reconnectDelay = math.min(reconnectDelay * 2, RECONNECT_MAX_MS)
+  log:debug("Reconnecting in %d ms", delay)
+  SetTimer("reconnect", delay, function()
     connect()
   end)
 end
@@ -332,6 +344,7 @@ local function onConnect(client, reasonCode, _flags, message)
   if reasonCode == 0 then
     -- A reconnect armed before this session came up would tear it down
     CancelTimer("reconnect")
+    connectedAt = os.time()
 
     updateStatus("Connected")
     for topic, bindings in pairs(subscriptions) do
@@ -369,6 +382,9 @@ local function onDisconnect(client, reasonCode, message)
     -- connection on purpose isn't hammered.
     updateStatus("Disconnected")
   elseif wasConnected or wasConnecting then
+    if wasConnected and os.time() - connectedAt >= STABLE_SESSION_S then
+      reconnectDelay = RECONNECT_MIN_MS
+    end
     updateStatus(wasConnected and "Disconnected: " .. reason .. " (retrying)" or "Connect failed: " .. reason)
     scheduleReconnect()
   end

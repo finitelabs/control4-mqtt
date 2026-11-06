@@ -81,6 +81,11 @@ function C4:MQTT()
   return client
 end
 
+local now = 1000000
+os.time = function()
+  return now
+end
+
 local fired, told = {}, {}
 C4.FireEvent = function(_, name)
   fired[#fired + 1] = name
@@ -138,6 +143,15 @@ Properties = {
   ["Driver Version"] = "",
 }
 F.dofileBuild(ROOT .. "drivers/mqtt_broker/driver.lua", "oss")
+
+local waits = {}
+local setTimer = SetTimer
+function SetTimer(id, delay, ...)
+  if id == "reconnect" then
+    waits[#waits + 1] = delay
+  end
+  return setTimer(id, delay, ...)
+end
 OnDriverInit()
 OnDriverLateInit("DIT_STARTUP")
 answer()
@@ -251,5 +265,34 @@ T.eq("or the error code's meaning", Properties["Driver Status"], "Connect failed
 lookupError = nil
 T.truthy("and it connects once the name resolves", retry())
 T.eq("Driver Status", Properties["Driver Status"], "Connected")
+
+--------------------------------------------------------------------------------
+T.section("retries wait longer each time, and a session that lasted starts them over")
+--------------------------------------------------------------------------------
+
+waits = {}
+broker.up = false
+now = now + 600
+drop()
+for _ = 1, 5 do
+  retry()
+end
+T.eq("the waits double from 2 s to 30 s", waits, { 2000, 4000, 8000, 16000, 30000, 30000 })
+
+broker.up = true
+retry()
+waits = {}
+now = now + 600
+drop()
+T.eq("after a session that lasted, the first wait is 2 s", waits, { 2000 })
+retry()
+
+waits = {}
+for _ = 1, 2 do
+  now = now + 5
+  drop()
+  retry()
+end
+T.eq("sessions that end at once keep the waits growing", waits, { 4000, 8000 })
 
 T.finish()
