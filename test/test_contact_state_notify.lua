@@ -186,6 +186,16 @@ do
   T.eq("after the first state, a change is OPENED as before", contactCommands(id), { "OPENED" })
 end
 
+do
+  local contact, id = newContact()
+  bindShowing(id, "0")
+  contact:onMessage("open")
+  sent = {}
+  contact:reset()
+  contact:onMessage("closed")
+  T.eq("after a broker rebind, a first state the contact doesn't show is a change too", contactCommands(id), { "CLOSED" })
+end
+
 ShimResetDevices()
 C4:Unbind(900, 1)
 
