@@ -50,8 +50,14 @@ function C4:MQTT()
     if lookupError then
       return unpack(lookupError)
     end
-    local up, answers = broker.up, broker.answers
+    local up, answers, down = broker.up, broker.answers, broker.down
     queued[#queued + 1] = function()
+      if down then
+        -- What the controller's client calls back for a broker that is down (measured on 4.3).
+        self.cb.OnDisconnect(self, 0, "Success")
+        self.cb.OnDisconnect(self, 4, "Disconnect with Will Message")
+        return
+      end
       if not answers then
         self.cb.OnDisconnect(self, 14, "connection refused")
         return
@@ -319,6 +325,27 @@ T.section("a refusal with no message says the reason code's meaning")
 broker.client.cb.OnConnect(broker.client, 5, 0, "")
 T.eq("rather than nothing", Properties["Driver Status"], "Connect failed: reason 5")
 retry()
+
+--------------------------------------------------------------------------------
+T.section("a broker that is down is retried until it is back")
+--------------------------------------------------------------------------------
+
+waits = {}
+reset()
+now = now + 600
+broker.down = true
+drop("The connection was lost.")
+T.eq("the drop fires Broker Disconnected", fired, { "Broker Disconnected" })
+retry()
+T.eq("a failed attempt reads Connect failed", Properties["Driver Status"], "Connect failed")
+T.truthy("and is retried", retry())
+T.truthy("and again", retry())
+T.eq("with the waits growing", waits, { 2000, 4000, 8000, 16000 })
+T.eq("and no more Broker Disconnected", fired, { "Broker Disconnected" })
+broker.down = false
+T.truthy("the next retry", retry())
+T.eq("connects", Properties["Driver Status"], "Connected")
+T.eq("and fires Broker Connected once", fired, { "Broker Disconnected", "Broker Connected" })
 
 --------------------------------------------------------------------------------
 T.section("Reconnect is a programming command as well as an action")

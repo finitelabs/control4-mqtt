@@ -398,18 +398,24 @@ local function onDisconnect(client, reasonCode, message)
   local wasConnected, wasConnecting = isBrokerConnected, connecting
   connecting = false
   setConnected(false)
-  if reasonCode == 0 then
+  if wasConnecting then
+    -- The client reports an attempt that never connected as a disconnect, reason 0 included.
+    updateStatus(reasonCode == 0 and "Connect failed" or "Connect failed: " .. reason)
+    scheduleReconnect()
+  elseif not wasConnected then
+    -- A later callback for an attempt already reported, or the end of a refused connect.
+    return
+  elseif reasonCode == 0 then
     -- A server's clean close isn't retried, so a broker that closes the
     -- connection on purpose isn't hammered.
     updateStatus("Disconnected")
-  elseif wasConnected or wasConnecting then
-    if wasConnected and os.time() - connectedAt >= STABLE_SESSION_S then
+  else
+    if os.time() - connectedAt >= STABLE_SESSION_S then
       reconnectDelay = RECONNECT_MIN_MS
     end
-    updateStatus(wasConnected and "Disconnected: " .. reason .. " (retrying)" or "Connect failed: " .. reason)
+    updateStatus("Disconnected: " .. reason .. " (retrying)")
     scheduleReconnect()
   end
-  -- Otherwise it ends a refused connect, which onConnect has reported and retries.
 end
 
 --- The client's message callback.

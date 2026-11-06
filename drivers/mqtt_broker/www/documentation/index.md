@@ -209,7 +209,8 @@ Displays the state of the connection to the broker:
 
 - `Connecting...` while the driver waits for the broker to answer.
 - `Connected` once the broker accepts the connection.
-- `Connect failed: <reason>` when an attempt fails. The driver tries again.
+- `Connect failed: <reason>`, or `Connect failed` when the broker gives no
+  reason, when an attempt fails. The driver tries again.
 - `Disconnected: <reason> (retrying)` when a connection drops. The driver tries
   again.
 - `Disconnected` when the broker closes the connection cleanly. The driver does
