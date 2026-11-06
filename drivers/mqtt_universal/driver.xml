@@ -14,7 +14,7 @@
   <combo>true</combo>
   <minimum_os_version>3.3.0</minimum_os_version>
   <composer_categories>
-    <category>Misc</category>
+    <category>Utility</category>
   </composer_categories>
   <conditionals/>
   <events/>
