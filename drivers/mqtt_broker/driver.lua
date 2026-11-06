@@ -32,6 +32,9 @@ local MQTT_BROKER_BINDING = 5001
 
 local mqttClient = nil
 local isBrokerConnected = false
+-- What bound items were last told; unknown at load, since after a driver update
+-- they may still think the broker is connected.
+local itemsToldConnected = nil
 
 -- Track subscriptions: topic -> {deviceId -> true}
 local subscriptions = {}
@@ -267,6 +270,20 @@ local function notifyChildDrivers(command, params)
   SendToProxy(MQTT_BROKER_BINDING, command, params or {}, "NOTIFY")
 end
 
+--- Records whether the broker is connected. Broker Connected and Broker Disconnected fire, and bound items are told,
+--- only on a change.
+--- @param connected boolean
+local function setConnected(connected)
+  if connected ~= isBrokerConnected then
+    isBrokerConnected = connected
+    C4:FireEvent(connected and "Broker Connected" or "Broker Disconnected")
+  end
+  if connected ~= itemsToldConnected then
+    itemsToldConnected = connected
+    notifyChildDrivers(connected and "BROKER_CONNECTED" or "BROKER_DISCONNECTED", {})
+  end
+end
+
 --- Route incoming MQTT messages to subscribed child drivers
 --- @param topic string The topic the message was received on
 --- @param payload string The message payload
@@ -306,18 +323,14 @@ local function onConnect(client, reasonCode, _flags, message)
     -- A reconnect armed before this session came up would tear it down
     CancelTimer("reconnect")
 
-    isBrokerConnected = true
     updateStatus("Connected")
-    C4:FireEvent("Broker Connected")
-
     for topic, bindings in pairs(subscriptions) do
       if next(bindings) then
         log:debug("Re-subscribing to topic: %s", topic)
         client:Subscribe(topic)
       end
     end
-
-    notifyChildDrivers("BROKER_CONNECTED", {})
+    setConnected(true)
   else
     local errorMessage = message or client:ReasonCodeToString(reasonCode) or "unknown"
     updateStatus("Connect failed: " .. errorMessage)
@@ -340,11 +353,8 @@ local function onDisconnect(client, reasonCode)
   end
   local reasonString = client:ReasonCodeToString(reasonCode) or "unknown"
   log:warn("MQTT:OnDisconnect reasonCode=%s - %s", reasonCode, reasonString)
-  isBrokerConnected = false
+  setConnected(false)
   updateStatus("Disconnected")
-  C4:FireEvent("Broker Disconnected")
-
-  notifyChildDrivers("BROKER_DISCONNECTED", {})
 
   -- A server's clean close (reasonCode 0) isn't retried, so a broker that
   -- closes the connection on purpose isn't hammered.
@@ -398,16 +408,14 @@ connect = function()
   end
 
   CancelTimer("reconnect")
-
-  -- Tell bound items the connection is going down before reconnecting
-  notifyChildDrivers("BROKER_DISCONNECTED", {})
+  -- The replaced client's own disconnect is ignored as stale, so the change is told here.
+  setConnected(false)
 
   if mqttClient then
     log:debug("Disconnecting existing MQTT connection")
     mqttClient:Disconnect()
     mqttClient = nil
   end
-  isBrokerConnected = false
 
   local brokerAddress = Properties["Broker Address"]
   local port = tonumber(Properties["Port"]) or 1883
