@@ -62,6 +62,7 @@ The MQTT driver suite consists of two drivers:
 - [Programming](#programming)
   - [Events](#events)
   - [Conditionals](#conditionals)
+  - [Commands](#commands)
   <!-- #ifdef DRIVERCENTRAL -->
 - [Developer Information](#developer-information)
   <!-- #endif -->
@@ -204,7 +205,26 @@ changes it on all of them.
 
 ##### Driver Status (read-only)
 
-Displays the current status of the driver.
+Displays the state of the connection to the broker:
+
+- `Connecting...` while the driver waits for the broker to answer.
+- `Connected` once the broker accepts the connection.
+- `Connect failed: <reason>`, or `Connect failed` when the broker gives no
+  reason, when an attempt fails. The driver tries again.
+- `Disconnected: <reason> (retrying)` when a connection drops. The driver tries
+  again.
+- `Disconnected` when the broker closes the connection cleanly. The driver does
+  not try again until you run [`Reconnect`](#reconnect) or change a
+  [Broker Setting](#broker-settings).
+- `Not configured` while [`Broker Address`](#broker-address) is empty.
+  <!-- #ifdef DRIVERCENTRAL -->
+- `No active license` while the driver has no active license or trial.
+  <!-- #endif -->
+
+The driver waits 2 seconds before its first retry and doubles the wait after
+each retry that fails, up to 30 seconds, so a broker that stays down is retried
+every 30 seconds. The wait goes back to 2 seconds once a connection has stayed
+up for two minutes.
 
 ##### Driver Version (read-only)
 
@@ -279,7 +299,8 @@ of the current version.
 
 #### Reconnect
 
-Manually trigger a reconnection to the MQTT broker.
+Closes the connection to the broker and connects again. Control4 programming can
+do the same with the [`Reconnect`](#commands) command.
 
 <!-- #ifdef DRIVERCENTRAL -->
 
@@ -301,16 +322,22 @@ this broker.
 
 ## Events
 
-| Event               | Description                                             |
-| ------------------- | ------------------------------------------------------- |
-| Broker Connected    | Fires when the driver connects to the MQTT broker.      |
-| Broker Disconnected | Fires when the driver disconnects from the MQTT broker. |
+| Event               | Description                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Broker Connected    | Fires when the driver connects to the MQTT broker.                                                                                                    |
+| Broker Disconnected | Fires once when a connection to the MQTT broker ends, whether the broker drops it or the driver closes it. It does not fire again while retries fail. |
 
 ## Conditionals
 
 | Conditional                   | Description                                                |
 | ----------------------------- | ---------------------------------------------------------- |
 | MQTT broker connection status | Tests whether the broker is `Connected` or `Disconnected`. |
+
+## Commands
+
+| Command   | Parameters | Description                                                                         |
+| --------- | ---------- | ----------------------------------------------------------------------------------- |
+| Reconnect | None       | Closes the connection to the broker and connects again, as the action of that name. |
 
 <!-- #ifdef DRIVERCENTRAL -->
 

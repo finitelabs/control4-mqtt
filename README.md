@@ -46,6 +46,7 @@ The MQTT driver suite consists of two drivers:
 - [Programming](#programming)
   - [Events](#events)
   - [Conditionals](#conditionals)
+  - [Commands](#commands)
 - [Support](#support)
 - [Changelog](#changelog)
 
@@ -112,7 +113,23 @@ changes it on all of them.
 
 ##### Driver Status (read-only)
 
-Displays the current status of the driver.
+Displays the state of the connection to the broker:
+
+- `Connecting...` while the driver waits for the broker to answer.
+- `Connected` once the broker accepts the connection.
+- `Connect failed: <reason>`, or `Connect failed` when the broker gives no
+  reason, when an attempt fails. The driver tries again.
+- `Disconnected: <reason> (retrying)` when a connection drops. The driver tries
+  again.
+- `Disconnected` when the broker closes the connection cleanly. The driver does
+  not try again until you run [`Reconnect`](#reconnect) or change a
+  [Broker Setting](#broker-settings).
+- `Not configured` while [`Broker Address`](#broker-address) is empty.
+
+The driver waits 2 seconds before its first retry and doubles the wait after
+each retry that fails, up to 30 seconds, so a broker that stays down is retried
+every 30 seconds. The wait goes back to 2 seconds once a connection has stayed
+up for two minutes.
 
 ##### Driver Version (read-only)
 
@@ -161,7 +178,8 @@ of the current version.
 
 #### Reconnect
 
-Manually trigger a reconnection to the MQTT broker.
+Closes the connection to the broker and connects again. Control4 programming can
+do the same with the [`Reconnect`](#commands) command.
 
 ## Connections
 
@@ -174,16 +192,22 @@ this broker.
 
 ## Events
 
-| Event               | Description                                             |
-| ------------------- | ------------------------------------------------------- |
-| Broker Connected    | Fires when the driver connects to the MQTT broker.      |
-| Broker Disconnected | Fires when the driver disconnects from the MQTT broker. |
+| Event               | Description                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Broker Connected    | Fires when the driver connects to the MQTT broker.                                                                                                    |
+| Broker Disconnected | Fires once when a connection to the MQTT broker ends, whether the broker drops it or the driver closes it. It does not fire again while retries fail. |
 
 ## Conditionals
 
 | Conditional                   | Description                                                |
 | ----------------------------- | ---------------------------------------------------------- |
 | MQTT broker connection status | Tests whether the broker is `Connected` or `Disconnected`. |
+
+## Commands
+
+| Command   | Parameters | Description                                                                         |
+| --------- | ---------- | ----------------------------------------------------------------------------------- |
+| Reconnect | None       | Closes the connection to the broker and connects again, as the action of that name. |
 
 # <span style="color:#660066">Support</span>
 
@@ -216,6 +240,11 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 
 ## v20261106 - 2026-11-06
 
+### Added
+
+- Added a `Reconnect` command to the MQTT Broker, so Control4 programming can
+  reconnect it to the broker the same way as the `Reconnect` action.
+
 ### Fixed
 
 - Fixed an MQTT Universal relay item running the bound relay's programming each
@@ -233,6 +262,19 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   when a new message arrives.
 - Fixed the MQTT Broker printing its password to the Lua output when debug
   printing was on.
+- Fixed the MQTT Broker waiting 30 seconds to reconnect after every drop. It now
+  tries again 2 seconds after a drop and waits longer after each failed attempt,
+  up to 30 seconds.
+- Fixed the MQTT Broker staying at `Connecting...` with no retry when its
+  `Broker Address` did not resolve, and showing a bare `Disconnected` while it
+  retried. `Driver Status` now shows why the connection dropped or failed, and
+  the driver retries.
+- Fixed the MQTT Broker's Broker Disconnected event firing again at each failed
+  retry while the broker stayed down, and not firing when a Reconnect or a
+  settings change closed a live connection. Broker Connected and Broker
+  Disconnected now fire only when the connection changes.
+- Fixed updating or removing the MQTT Broker leaving its old connection to the
+  broker open.
 - Fixed automatic updates sometimes leaving an MQTT driver a version behind.
   Each driver now updates in turn.
 - Fixed changing Automatic Updates or Update Channel on an MQTT driver briefly
