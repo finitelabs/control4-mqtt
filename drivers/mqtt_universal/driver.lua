@@ -695,6 +695,7 @@ function OPC.Log_Mode(propertyValue)
   log:setLogMode(propertyValue)
   CancelTimer("LogMode")
   if not log:isEnabled() then
+    UpdateProperty("Log Level", "3 - Info", true)
     return
   end
   log:warn("Log mode '%s' will expire in 3 hours", propertyValue)
@@ -702,6 +703,7 @@ function OPC.Log_Mode(propertyValue)
     log:warn("Setting log mode to 'Off' (timer expired)")
     UpdateProperty("Log Mode", "Off", true)
   end)
+  OnPropertyChanged("Log Level")
 end
 
 function OPC.Log_Level(propertyValue)
