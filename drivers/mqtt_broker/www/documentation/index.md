@@ -58,13 +58,14 @@ The MQTT driver suite consists of two drivers:
       - [Cloud Settings](#cloud-settings)
       - [Driver Settings](#driver-settings)
       - [Broker Settings](#broker-settings)
-  - [Driver Actions](#driver-actions)
-  - [Programming](#programming)
+    - [Driver Actions](#driver-actions)
+  - [Connections](#connections)
+- [Programming](#programming)
+  - [Events](#events)
+  - [Conditionals](#conditionals)
   <!-- #ifdef DRIVERCENTRAL -->
 - [Developer Information](#developer-information)
-
-<!-- #endif -->
-
+  <!-- #endif -->
 - [Support](#support)
 - [Changelog](#changelog)
 
@@ -267,41 +268,51 @@ Sets the password for broker authentication (optional).
 
 Sets the keep-alive interval in seconds. Default is `60`.
 
-#### Driver Actions
-
-##### Reconnect
-
-Manually trigger a reconnection to the MQTT broker.
+### Driver Actions
 
 <!-- #ifndef DRIVERCENTRAL -->
 
-##### Update Drivers
+#### Update Drivers
 
 Trigger all MQTT drivers to update from the latest release on GitHub, regardless
 of the current version.
 
 <!-- #endif -->
 
+#### Reconnect
+
+Manually trigger a reconnection to the MQTT broker.
+
 <!-- #ifdef DRIVERCENTRAL -->
 
-##### Diagnostics Snapshot
+#### Diagnostics Snapshot
 
 Prints a report in the Lua output, and sends it to Finite Labs only while Cloud
 Monitoring is Enabled.
 
 <!-- #endif -->
 
-### Programming
+## Connections
 
-**Events:**
+### MQTT Broker (provider)
 
-- **Broker Connected** - Fires when the driver connects to the MQTT broker
-- **Broker Disconnected** - Fires when the driver disconnects from the MQTT
-  broker
+Each MQTT Universal driver binds here to send and receive its messages through
+this broker.
 
-**Conditionals:**
+# <span style="color:#660066">Programming</span>
 
-- **Broker Connected** - Check if the broker is connected or disconnected
+## Events
+
+| Event               | Description                                             |
+| ------------------- | ------------------------------------------------------- |
+| Broker Connected    | Fires when the driver connects to the MQTT broker.      |
+| Broker Disconnected | Fires when the driver disconnects from the MQTT broker. |
+
+## Conditionals
+
+| Conditional                   | Description                                                |
+| ----------------------------- | ---------------------------------------------------------- |
+| MQTT broker connection status | Tests whether the broker is `Connected` or `Disconnected`. |
 
 <!-- #ifdef DRIVERCENTRAL -->
 
