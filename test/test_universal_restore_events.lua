@@ -10,6 +10,7 @@
 local T = require("testlib")
 
 require("c4_shim")
+local F = require("c4_fixtures")
 package.preload["cloud-client-byte"] = function()
   return {}
 end
@@ -49,7 +50,7 @@ function C4:DeleteEvent(...)
   return deleteEvent(self, ...)
 end
 
-dofile(HERE .. "../drivers/mqtt_universal/driver.lua")
+F.dofileBuild(HERE .. "../drivers/mqtt_universal/driver.lua", "drivercentral")
 
 T.section("OnDriverInit leaves the events alone")
 do
@@ -60,7 +61,7 @@ end
 
 T.section("OnDriverLateInit declares them again")
 do
-  OnDriverLateInit("DIT_STARTUP")
+  ShimLateInit("DIT_STARTUP")
   T.eq("the event is back under its id", (ShimEvents()[eventId] or {}).name, "Doorbell pressed")
 end
 

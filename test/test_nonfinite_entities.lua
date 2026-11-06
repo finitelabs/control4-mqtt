@@ -7,11 +7,9 @@
 -- or:
 --   ./test/run_test.sh test_nonfinite_entities.lua
 --
--- The payloads here are strings rather than 0/0 because that is the form the
--- bug takes: a failed one-wire or I2C probe on ESPHome and Tasmota firmware
--- publishes the literal text "nan", and tonumber parses "nan", "inf" and an
--- overflowing literal like 1e999 into real non-finite numbers, so the nil
--- guards these call sites already had never fired for them.
+-- The payloads are strings rather than 0/0 because a failed probe publishes the
+-- text "nan", and tonumber parses "nan", "inf" and an overflowing literal into
+-- real non-finite numbers, which a nil guard lets through.
 --
 -- Regression test for DRV-122.
 
@@ -91,10 +89,8 @@ end
 T.section("a repeated non-finite reading does not churn")
 --------------------------------------------------------------------------------
 
--- The consequence that made this worth fixing rather than tolerating: NaN never
--- equals itself, so `self._state ~= numValue` was true on every redelivery. A
--- retained message republished by the broker logged and re-notified the proxy
--- forever, at whatever rate the device published.
+-- NaN never equals itself, so an unguarded value would count as a change on
+-- every redelivery and re-notify the proxy each time the device published.
 local churn = newSensor("Churn Temperature", "TEMPERATURE")
 local firstChanged = feed(churn, "nan")
 local secondChanged, secondSent = feed(churn, "nan")
@@ -149,8 +145,8 @@ T.section("a numeric variable rejects a non-finite payload")
 --------------------------------------------------------------------------------
 
 -- Values:update coerces a FLOAT or NUMBER with tonumber, so an unguarded "nan"
--- became a C4 variable holding the string "nan". Every Composer comparison
--- bound to that variable is then operating on a non-number.
+-- would make the C4 variable hold the string "nan", and every comparison on it
+-- in Control4 programming would compare a non-number.
 for _, varType in ipairs({ "FLOAT", "NUMBER" }) do
   local name = "Setpoint " .. varType
   local variable = MqttVariable:new({ id = name, name = name, itemType = varType }, 1)

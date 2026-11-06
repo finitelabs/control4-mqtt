@@ -64,37 +64,26 @@ OnDriverLateInit("DIT_STARTUP")
 --- @param value string
 --- @return string printed
 local function printedFor(name, value)
-  local lines = {}
-  local realPrint = print
-  print = function(...)
-    local parts = {}
-    for i = 1, select("#", ...) do
-      parts[#parts + 1] = tostring(select(i, ...))
-    end
-    lines[#lines + 1] = table.concat(parts, " ")
-  end
   DEBUGPRINT = true
   Properties[name] = value
-  local ok, err = pcall(OnPropertyChanged, name)
+  local ok, err, printed = T.capture(function()
+    OnPropertyChanged(name)
+  end)
   DEBUGPRINT = false
-  print = realPrint
   assert(ok, err)
-  return table.concat(lines, "\n")
+  return printed
 end
 
 --------------------------------------------------------------------------------
 T.section("debug printing shows a property change")
 --------------------------------------------------------------------------------
 
-T.truthy("a Keep Alive change prints its value", printedFor("Keep Alive", "45"):find("45", 1, true) ~= nil)
+T.contains("a Keep Alive change prints its value", printedFor("Keep Alive", "45"), "45")
 
 --------------------------------------------------------------------------------
 T.section("but never the Password")
 --------------------------------------------------------------------------------
 
-T.truthy(
-  "a Password change prints no part of the password",
-  printedFor("Password", SECRET):find(SECRET, 1, true) == nil
-)
+T.excludes("a Password change prints no part of the password", printedFor("Password", SECRET), SECRET)
 
 T.finish()

@@ -11,6 +11,7 @@
 require("c4_shim")
 require("drivers-common-public.global.timer") -- CancelTimer, Timer and TimerFunctions, as driver.lua loads them
 local T = require("testlib")
+local F = require("c4_fixtures")
 local cloud = require("dc_cloud")
 
 local ROOT = (debug.getinfo(1, "S").source:match("@(.*[/\\])") or "./") .. "../"
@@ -31,27 +32,6 @@ function C4:UpdateProperty(name, value)
   Properties[name] = value
 end
 C4.FireEvent = function() end
-
---- Runs `path` as the DriverCentral build compiles it: the lines its directives leave out are blanked.
---- @param path string
-local function dofileDriverCentral(path)
-  local f = assert(io.open(path))
-  local lines, stack, including = {}, {}, true
-  for line in f:lines() do
-    local ifdef, name = line:match("^%s*%-%-%s*#(ifn?def)%s+([%w_]+)%s*$")
-    if ifdef then
-      stack[#stack + 1] = including
-      including = including and (name == "DRIVERCENTRAL") == (ifdef == "ifdef")
-    elseif line:match("^%s*%-%-%s*#else%s*$") then
-      including = stack[#stack] and not including
-    elseif line:match("^%s*%-%-%s*#endif%s*$") then
-      including = table.remove(stack)
-    end
-    lines[#lines + 1] = including and line or ""
-  end
-  f:close()
-  return assert(load(table.concat(lines, "\n"), "@" .. path))()
-end
 
 -- The gate's own 10 s read, captured so a test runs it without firing every other timer.
 local gateRead
@@ -150,9 +130,9 @@ local function load(answer, brokerUp)
     ["Driver Status"] = "",
     ["Driver Version"] = "",
   }
-  dofileDriverCentral(ROOT .. "drivers/mqtt_broker/driver.lua")
+  F.dofileBuild(ROOT .. "drivers/mqtt_broker/driver.lua", "drivercentral")
   OnDriverInit()
-  OnDriverLateInit("DIT_STARTUP")
+  ShimLateInit("DIT_STARTUP")
 end
 
 --- `n` rounds of 10 s: one ping, then one read by the gate.
@@ -268,7 +248,7 @@ do
   package.loaded["lib.drivercentral"] = nil
   Properties =
     { ["Cloud Status"] = "", ["Automatic Updates"] = "Off", ["Log Level"] = "3 - Info", ["Log Mode"] = "Off" }
-  dofileDriverCentral(ROOT .. "drivers/mqtt_universal/driver.lua")
+  F.dofileBuild(ROOT .. "drivers/mqtt_universal/driver.lua", "drivercentral")
   OnDriverInit()
   T.eq("DC_PID", DC_PID, 857)
   T.eq("the client is loaded", package.loaded["cloud-client-byte"] ~= nil, true)
