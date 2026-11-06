@@ -22,10 +22,9 @@ ______________________________________________________________________
 > DISCLAIMER: This software is neither affiliated with nor endorsed by either
 > Control4 or MQTT.
 
-The MQTT Broker driver connects Control4 to an MQTT broker (such as Mosquitto,
-HiveMQ, or other MQTT-compatible platforms). It manages the connection and
-provides pub/sub services to child drivers that connect via the MQTT broker
-connection binding.
+The MQTT Broker driver connects Control4 to any MQTT broker. It manages the
+connection and provides pub/sub services to child drivers that connect via the
+MQTT broker connection binding.
 
 ## Driver Suite
 
@@ -57,14 +56,15 @@ The MQTT driver suite consists of two drivers:
     - [Driver Properties](#driver-properties)
       - [Cloud Settings](#cloud-settings)
       - [Driver Settings](#driver-settings)
-      - [MQTT Settings](#mqtt-settings)
-  - [Driver Actions](#driver-actions)
-  - [Programming](#programming)
+      - [Broker Settings](#broker-settings)
+    - [Driver Actions](#driver-actions)
+  - [Connections](#connections)
+- [Programming](#programming)
+  - [Events](#events)
+  - [Conditionals](#conditionals)
   <!-- #ifdef DRIVERCENTRAL -->
 - [Developer Information](#developer-information)
-
-<!-- #endif -->
-
+  <!-- #endif -->
 - [Support](#support)
 - [Changelog](#changelog)
 
@@ -110,7 +110,7 @@ for setting it up.
    [DriverCentral](https://drivercentral.io/platforms/control4-drivers/utility/mqtt).
 
 1. Extract and
-   [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
+   [install](https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)
    the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
 
 1. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
@@ -131,7 +131,7 @@ for setting it up.
    in the "System Design" tab and perform the "Check Drivers" action.
    <br><img alt="Check Drivers" src="./images/check-drivers.png" width="300"/>
 
-1. Configure the [Device Settings](#device-settings) with the connection
+1. Configure the [Broker Settings](#broker-settings) with the connection
    information.
 
 1. After a few moments the [`Driver Status`](#driver-status-read-only) will
@@ -146,7 +146,7 @@ for setting it up.
    [Github](https://github.com/finitelabs/control4-mqtt/releases/latest).
 
 1. Extract and
-   [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
+   [install](https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)
    the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
 
 1. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
@@ -155,7 +155,7 @@ for setting it up.
    > ⚠️ A **_single_** broker driver instance is required per broker you wish to
    > connect to.
 
-1. Configure the [Device Settings](#device-settings) with the connection
+1. Configure the [Broker Settings](#broker-settings) with the connection
    information.
 
 1. After a few moments the [`Driver Status`](#driver-status-read-only) will
@@ -174,13 +174,13 @@ for setting it up.
 
 <!-- #ifdef DRIVERCENTRAL -->
 
-##### Cloud Status
+##### Cloud Status (read-only)
 
 Displays the DriverCentral cloud license status.
 
 <!-- #endif -->
 
-##### Automatic Updates
+##### Automatic Updates \[ Off | **_On_** \]
 
 <!-- #ifdef DRIVERCENTRAL -->
 
@@ -192,7 +192,7 @@ Broker or MQTT Universal item changes it on all of them.
 Turns on/off the GitHub cloud automatic updates. Changing it on any MQTT Broker
 item changes it on all of them.
 
-##### Update Channel
+##### Update Channel \[ **_Production_** | Prerelease \]
 
 Sets the update channel for which releases are considered during an automatic
 update from the GitHub repo releases. Changing it on any MQTT Broker item
@@ -210,9 +210,9 @@ Displays the current status of the driver.
 
 Displays the current version of the driver.
 
-##### Log Level \[ Fatal | Error | Warning | **_Info_** | Debug | Trace | Ultra \]
+##### Log Level \[ 0 - Fatal | 1 - Error | 2 - Warning | **_3 - Info_** | 4 - Debug | 5 - Trace | 6 - Ultra \]
 
-Sets the logging level. Default is `Info`.
+Sets the logging level. Default is `3 - Info`.
 
 ##### Log Mode \[ **_Off_** | Print | Log | Print and Log \]
 
@@ -240,20 +240,19 @@ address is removed.
 
 <!-- #endif -->
 
-#### MQTT Settings
+#### Broker Settings
 
 ##### Broker Address
 
-Sets the broker IP address (e.g. `192.168.1.30`). Domain names are allowed as
-long as they can be resolved to an accessible IP address by the controller.
-HTTPS is not supported.
+Sets the broker's IP address. A host name also works when the controller can
+resolve it. HTTPS is not supported.
 
 > ⚠️ If you are using an IP address, you should ensure it will not change by
 > assigning a static IP or creating a DHCP reservation.
 
-##### Port
+##### Port \[ 1 - 65535, default: **_1883_** \]
 
-Sets the broker port. The default port for most brokers is `1883`.
+Sets the port the broker listens on. Default is `1883`.
 
 ##### Username
 
@@ -263,45 +262,55 @@ Sets the username for broker authentication (optional).
 
 Sets the password for broker authentication (optional).
 
-##### Keep Alive
+##### Keep Alive \[ 10 - 3600, default: **_60_** \]
 
 Sets the keep-alive interval in seconds. Default is `60`.
 
-#### Driver Actions
-
-##### Reconnect
-
-Manually trigger a reconnection to the MQTT broker.
+### Driver Actions
 
 <!-- #ifndef DRIVERCENTRAL -->
 
-##### Update Drivers
+#### Update Drivers
 
 Trigger all MQTT drivers to update from the latest release on GitHub, regardless
 of the current version.
 
 <!-- #endif -->
 
+#### Reconnect
+
+Manually trigger a reconnection to the MQTT broker.
+
 <!-- #ifdef DRIVERCENTRAL -->
 
-##### Diagnostics Snapshot
+#### Diagnostics Snapshot
 
 Prints a report in the Lua output, and sends it to Finite Labs only while Cloud
 Monitoring is Enabled.
 
 <!-- #endif -->
 
-### Programming
+## Connections
 
-**Events:**
+### MQTT Broker (provider)
 
-- **Broker Connected** - Fires when the driver connects to the MQTT broker
-- **Broker Disconnected** - Fires when the driver disconnects from the MQTT
-  broker
+Each MQTT Universal driver binds here to send and receive its messages through
+this broker.
 
-**Conditionals:**
+# <span style="color:#660066">Programming</span>
 
-- **Broker Connected** - Check if the broker is connected or disconnected
+## Events
+
+| Event               | Description                                             |
+| ------------------- | ------------------------------------------------------- |
+| Broker Connected    | Fires when the driver connects to the MQTT broker.      |
+| Broker Disconnected | Fires when the driver disconnects from the MQTT broker. |
+
+## Conditionals
+
+| Conditional                   | Description                                                |
+| ----------------------------- | ---------------------------------------------------------- |
+| MQTT broker connection status | Tests whether the broker is `Connected` or `Disconnected`. |
 
 <!-- #ifdef DRIVERCENTRAL -->
 

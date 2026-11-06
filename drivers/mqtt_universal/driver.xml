@@ -14,7 +14,7 @@
   <combo>true</combo>
   <minimum_os_version>3.3.0</minimum_os_version>
   <composer_categories>
-    <category>Misc</category>
+    <category>Utility</category>
   </composer_categories>
   <conditionals/>
   <events/>
@@ -128,7 +128,7 @@
         <name>Availability Value Path</name>
         <type>STRING</type>
         <default/>
-        <description>JSONPath to extract availability value (e.g., "$.status"). Leave empty to use raw payload.</description>
+        <description>JSONPath to the availability value; leave empty to use the whole payload.</description>
       </property>
       <property>
         <name>Availability Value Path Result</name>
@@ -148,13 +148,13 @@
         <name>Payload Available</name>
         <type>STRING</type>
         <default/>
-        <description>Payload that indicates device is available (if only this is set, other values mean unavailable)</description>
+        <description>Payload that means the device is available.</description>
       </property>
       <property>
         <name>Payload Not Available</name>
         <type>STRING</type>
         <default/>
-        <description>Payload that indicates device is not available (if only this is set, other values mean available)</description>
+        <description>Payload that means the device is unavailable.</description>
       </property>
       <!-- Add Devices Section -->
       <property>
@@ -267,7 +267,7 @@
         <name>Value Path</name>
         <type>STRING</type>
         <default/>
-        <description>JSONPath expression to extract value (e.g., "$.sensors.temperature" or "$.data[0].value"). Leave empty to use raw payload.</description>
+        <description>JSONPath to the value in the payload; leave empty to use the whole payload.</description>
       </property>
       <property>
         <name>Value Path Result</name>
@@ -350,7 +350,7 @@
         <name>Event Type Filter</name>
         <type>STRING</type>
         <default/>
-        <description>Comma-separated list of event types to accept (e.g., "press,hold"). Leave empty to accept all.</description>
+        <description>Event types to accept, separated by commas; leave empty to accept all.</description>
       </property>
       <!-- Common properties -->
       <property>

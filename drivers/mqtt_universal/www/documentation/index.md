@@ -22,11 +22,9 @@ ______________________________________________________________________
 > DISCLAIMER: This software is neither affiliated with nor endorsed by either
 > Control4 or MQTT.
 
-The MQTT Universal driver is a comprehensive solution for integrating MQTT
-devices and variables with Control4. It allows you to dynamically create relays,
-contact sensors, buttons, and variables that sync with MQTT topics. Each item
-can be configured with its own state and command topics, enabling flexible
-integration with any MQTT-based system.
+The MQTT Universal driver brings MQTT devices and values into Control4. You add
+relays, contact sensors, buttons, events and variables, and give each its own
+state and command topics. It reaches the broker through the MQTT Broker driver.
 
 # <span style="color:#660066">Index</span>
 
@@ -48,12 +46,14 @@ integration with any MQTT-based system.
       - [Manage Items](#manage-items)
       - [Item Configuration](#item-configuration)
   - [Connections](#connections)
-  - [Programming](#programming)
+- [Programming](#programming)
+  - [Events](#events)
+  - [Conditionals](#conditionals)
+  - [Commands](#commands)
+  - [Variables](#variables)
   <!-- #ifdef DRIVERCENTRAL -->
 - [Developer Information](#developer-information)
-
-<!-- #endif -->
-
+  <!-- #endif -->
 - [Support](#support)
 - [Changelog](#changelog)
 
@@ -68,18 +68,20 @@ integration with any MQTT-based system.
 
 **Devices:**
 
-- **Relays** - Create RELAY bindings for on/off control with state feedback
-- **Contact Sensors** - Create CONTACT_SENSOR bindings for open/closed state
+- **Relays** - Create `RELAY` bindings for on/off control with state feedback
+- **Contact Sensors** - Create `CONTACT_SENSOR` bindings for open/closed state
 - **Buttons** - Publish press commands to MQTT topics, with optional keypad
   linking
-- **Events** - Create BUTTON_LINK bindings that trigger on MQTT messages, for
+- **Events** - Create `BUTTON_LINK` bindings that trigger on MQTT messages, for
   keypad integration
 
 **Variables:**
 
 - **String/Bool/Number/Float** - Create Control4 variables synced with MQTT
-- **Temperature** - Create TEMPERATURE_VALUE bindings for thermostat integration
-- **Humidity** - Create HUMIDITY_VALUE bindings for humidity sensor integration
+- **Temperature** - Create `TEMPERATURE_VALUE` bindings for thermostat
+  integration
+- **Humidity** - Create `HUMIDITY_VALUE` bindings for humidity sensor
+  integration
 
 **Common Features:**
 
@@ -108,11 +110,11 @@ integration with any MQTT-based system.
 
 #### Cloud Settings
 
-##### Cloud Status
+##### Cloud Status (read-only)
 
 Displays the DriverCentral cloud license status.
 
-##### Automatic Updates
+##### Automatic Updates \[ Off | **_On_** \]
 
 Turns on/off the DriverCentral cloud automatic updates. Changing it on any MQTT
 Broker or MQTT Universal item changes it on all of them.
@@ -129,9 +131,9 @@ Displays the current status of the driver.
 
 Displays the current version of the driver.
 
-##### Log Level \[ Fatal | Error | Warning | **_Info_** | Debug | Trace | Ultra \]
+##### Log Level \[ 0 - Fatal | 1 - Error | 2 - Warning | **_3 - Info_** | 4 - Debug | 5 - Trace | 6 - Ultra \]
 
-Sets the logging level. Default is `Info`.
+Sets the logging level. Default is `3 - Info`.
 
 ##### Log Mode \[ **_Off_** | Print | Log | Print and Log \]
 
@@ -164,55 +166,67 @@ only while Cloud Monitoring is Enabled.
 
 #### Availability Settings
 
-These settings control global device availability for all items in the driver.
+These settings track one availability topic for the whole driver.
 
 ##### Availability Topic
 
-The MQTT topic to subscribe for availability status (optional). When a message
-is received, the driver will fire Device Available or Device Unavailable events.
+Sets the topic the driver subscribes to for the device's availability. Leave it
+empty if the device has no availability topic. Setting it adds the Device
+Available and Device Unavailable events and the availability conditional. Set
+[Payload Available](#payload-available),
+[Payload Not Available](#payload-not-available) or both to say which payloads
+mean what.
+
+> ⚠️ Clearing it removes the Device Available and Device Unavailable events and
+> the availability conditional, along with the programming on those events.
 
 ##### Availability Topic Value (read-only)
 
-Shows the raw payload received from the availability topic.
-
-##### Availability Status (read-only)
-
-Shows the current availability status (Available or Unavailable).
-
-##### Payload Available
-
-The payload that indicates the device is available.
-
-##### Payload Not Available
-
-The payload that indicates the device is unavailable.
+Shown only when [Availability Topic](#availability-topic) is set. Displays the
+last payload received on it.
 
 ##### Availability Value Path
 
-JSONPath expression to extract the availability value from a JSON payload. Leave
-empty to use the raw payload. This property appears when Availability Topic is
-configured.
-
-Example: If your availability topic publishes `{"status": "online"}`, set this
-to `$.status` to extract the `online` value.
+Shown only when [Availability Topic](#availability-topic) is set. Sets a
+JSONPath that picks the availability value out of a JSON payload. Leave it empty
+to use the whole payload. It takes the same paths as [Value Path](#value-path).
 
 ##### Availability Value Path Result (read-only)
 
-Shows the result of the JSONPath extraction, or an error message if extraction
-failed. This property appears when both Availability Topic and Availability
-Value Path are configured.
+Shown only when [Availability Topic](#availability-topic) and
+[Availability Value Path](#availability-value-path) are set. Displays the value
+the path picked from the last payload, or `Error: Invalid JSON` or
+`Error: Path not found`.
+
+##### Availability Status (read-only)
+
+Shown only when [Availability Topic](#availability-topic) is set. Displays
+`Available` or `Unavailable` once a payload matches.
+
+##### Payload Available
+
+Shown only when [Availability Topic](#availability-topic) is set. Sets the
+payload that means the device is available. If only this is set, any other
+payload means unavailable. If both payloads are set, a payload that matches
+neither is ignored.
+
+##### Payload Not Available
+
+Shown only when [Availability Topic](#availability-topic) is set. Sets the
+payload that means the device is unavailable. If only this is set, any other
+payload means available.
 
 #### Add Devices
 
 ##### Add Relay
 
-Enter a name to create a new relay. This creates a RELAY binding that can be
+Enter a name to create a new relay. This creates a `RELAY` binding that can be
 connected to other Control4 devices or used in programming. The relay supports
 ON, OFF, TOGGLE, and TRIGGER commands.
 
 ##### Add Contact
 
-Enter a name to create a new contact sensor. This creates a CONTACT_SENSOR
+Enter a name to create a new contact sensor. This creates a `CONTACT_SENSOR`
 binding that reports OPEN or CLOSED state based on MQTT messages.
 
 ##### Add Button
@@ -246,90 +260,56 @@ Enter a name to create a new FLOAT variable.
 ##### Add Temperature Variable
 
 Enter a name to create a new TEMPERATURE variable. This creates a
-TEMPERATURE_VALUE binding that can be connected to thermostats.
+`TEMPERATURE_VALUE` binding that can be connected to thermostats.
 
 ##### Add Humidity Variable
 
-Enter a name to create a new HUMIDITY variable. This creates a HUMIDITY_VALUE
+Enter a name to create a new HUMIDITY variable. This creates a `HUMIDITY_VALUE`
 binding that can be connected to humidity sensors.
 
 #### Manage Items
 
-##### Remove Item
+These properties are shown only once the driver has at least one item. Each
+entry in their lists reads `Name (TYPE) [ID]`.
 
-Select an item from the list to delete it. Format: `Name (TYPE) [ID]`
+##### Remove Item \[ **_(Select)_** | *added items...* \]
 
-##### Configure Item
+> ⚠️ Removing an item also removes its connection and the bindings made to it.
+> Removing an event item also removes its event and the programming on it.
 
-Select an item from the list to configure its MQTT settings. When selected, the
-Item Configuration properties will appear below.
+Selects an item to remove. The variables of a relay, contact, event, string,
+bool, number or float item are removed with it.
+
+##### Configure Item \[ **_(Select)_** | *added items...* \]
+
+Selects an item to show its settings under
+[Item Configuration](#item-configuration). A new item is selected here when you
+add it.
 
 #### Item Configuration
 
-These properties appear when an item is selected in "Configure Item". The
-available properties depend on the item type and configured topics.
+These properties are shown when an item is selected in
+[Configure Item](#configure-item--select--added-items-). Which ones appear
+depends on the item's type and on the topics it has.
 
 ##### State Topic
 
-The MQTT topic to subscribe for state updates.
+Shown for every item except a button. Sets the topic the item subscribes to for
+its state or value.
 
 ##### State Topic Value (read-only)
 
-Shows the raw payload received from the state topic.
+Shown only when the item has a [State Topic](#state-topic). Displays the last
+payload received on it.
 
-##### State (read-only)
+##### Value Path
 
-Shows the current state of the selected item (e.g., "On"/"Off" for relays,
-"Open"/"Closed" for contacts).
+Shown only when the item has a [State Topic](#state-topic). Sets a JSONPath that
+picks the value out of a JSON payload. Leave it empty to use the whole payload.
+The item's other settings then work on the value it picks.
 
-##### Command Topic
-
-The MQTT topic to publish commands to.
-
-##### Relay-Specific Properties
-
-These appear when a relay is selected:
-
-- **Payload On** - Payload to send for ON command (default: `ON`)
-- **Payload Off** - Payload to send for OFF command (default: `OFF`)
-- **State On** - Payload indicating ON state (if only this is set, other values
-  mean OFF)
-- **State Off** - Payload indicating OFF state (if only this is set, other
-  values mean ON)
-- **Optimistic** - Update state immediately on command (Auto: yes if no State
-  Topic)
-
-##### Contact-Specific Properties
-
-These appear when a contact is selected:
-
-- **State Open** - Payload indicating OPEN state (default: `OPEN`)
-- **State Closed** - Payload indicating CLOSED state (default: `CLOSED`)
-
-##### Button-Specific Properties
-
-These appear when a button is selected:
-
-- **Payload Press** - Payload to send when pressed (default: `PRESS`)
-
-g##### Event-Specific Properties
-
-These appear when an event is selected:
-
-- **Event Type Filter** - Comma-separated list of event types to accept (e.g.,
-  "press,hold"). Leave empty to accept all.
-
-##### JSONPath Properties
-
-These properties appear when a State Topic is configured:
-
-- **Value Path** - JSONPath expression to extract a value from a JSON payload.
-  Leave empty to use the raw payload. Supports dot notation for nested fields
-  and array indices.
-- **Value Path Result** (read-only) - Shows the extracted value or an error
-  message. Only appears when Value Path is configured.
-
-**JSONPath Examples:**
+A path starts with `$`, names nested fields with dots and picks an array entry
+by its index in brackets, counting from 0:
 
 | Payload                         | Value Path            | Result |
 | ------------------------------- | --------------------- | ------ |
@@ -338,58 +318,159 @@ These properties appear when a State Topic is configured:
 | `{"readings": [{"value": 42}]}` | `$.readings[0].value` | `42`   |
 | `{"data": [10, 20, 30]}`        | `$.data[1]`           | `20`   |
 
-##### Common Properties
+##### Value Path Result (read-only)
 
-These properties appear based on topic configuration:
+Shown only when the item has a State Topic and a [Value Path](#value-path).
+Displays the value the path picked from the last payload, or
+`Error: Invalid JSON` or `Error: Path not found`.
 
-- **QoS** - MQTT Quality of Service level (0, 1, or 2). Appears when State Topic
-  or Command Topic is configured.
-- **Retain** - Whether to retain published messages on the broker. Appears when
-  Command Topic is configured.
+##### State (read-only)
 
-##### Temperature-Specific Properties
+Shown only for a relay or contact with a State Topic. Displays `On` or `Off` for
+a relay and `Open` or `Closed` for a contact. It stays empty until a payload
+matches.
 
-- **Temperature Scale** - Scale of temperature values from MQTT: Celsius or
-  Fahrenheit.
+##### State On
+
+Shown only for a relay with a [State Topic](#state-topic). Sets the payload that
+means the relay is on. If only this is set, any other payload means off. If both
+State On and State Off are set, a payload that matches neither is ignored. A new
+item starts with both empty, and the relay shows no state until one is set.
+
+##### State Off
+
+Shown only for a relay with a State Topic. Sets the payload that means the relay
+is off. If only this is set, any other payload means on.
+
+##### Command Topic
+
+Shown for a relay, a button, and a string, bool, number or float variable. Sets
+the topic the item publishes to.
+
+##### Payload On
+
+Shown only for a relay with a [Command Topic](#command-topic). Sets the payload
+published when the relay turns on. A new item starts with it empty, so enter the
+payload your device expects: an empty field publishes an empty payload.
+
+##### Payload Off
+
+Shown only for a relay with a Command Topic. Sets the payload published when the
+relay turns off. Like Payload On, it starts empty.
+
+##### Optimistic \[ **_Auto_** | Yes | No \]
+
+Shown only for a relay. Sets whether the relay's state changes as soon as it
+publishes a command. `Auto` does so only when the item has no State Topic, `Yes`
+always does, and `No` waits for the State Topic. Default is `Auto`.
+
+##### State Open
+
+Shown only for a contact with a [State Topic](#state-topic). Sets the payload
+that means the contact is open. If only this is set, any other payload means
+closed. If both State Open and State Closed are set, a payload that matches
+neither is ignored. A new item starts with both empty, and the contact shows no
+state until one is set.
+
+##### State Closed
+
+Shown only for a contact with a State Topic. Sets the payload that means the
+contact is closed. If only this is set, any other payload means open.
+
+##### Payload Press
+
+Shown only for a button with a [Command Topic](#command-topic). Sets the payload
+published when the button is pressed, by the Press command or by a device bound
+to its connection. A new item starts with it empty, and an empty field publishes
+an empty payload.
+
+##### Event Type Filter
+
+Shown only for an event. Lists the event types the event accepts, separated by
+commas. A message whose value, after any Value Path, matches none of them is
+ignored. Leave it empty to accept every message.
+
+##### QoS \[ **_0_** | 1 | 2 \]
+
+Shown only when the item has a State Topic or a Command Topic. Sets the MQTT
+quality of service level the item subscribes and publishes with. Default is `0`.
+
+##### Retain \[ Yes | **_No_** \]
+
+Shown only when the item has a Command Topic. Sets whether the broker keeps the
+last message the item publishes for clients that subscribe later. Default is
+`No`.
+
+##### Temperature Scale \[ **_Celsius_** | Fahrenheit \]
+
+Shown only for a temperature variable. Sets the scale of the values on the State
+Topic, so its connection reports the right temperature. Default is `Celsius`.
 
 ## Connections
 
-When you add relays, contacts, buttons, or sensor variables, dynamic bindings
-are created that appear in the Connections tab:
+### MQTT Broker (consumer)
 
-- **Relays** create RELAY bindings
-- **Contacts** create CONTACT_SENSOR bindings
-- **Buttons** create BUTTON_LINK bindings (provider, for sending commands to
-  MQTT)
-- **Events** create BUTTON_LINK bindings (consumer, for triggering keypads)
-- **Temperature variables** create TEMPERATURE_VALUE bindings
-- **Humidity variables** create HUMIDITY_VALUE bindings
+Binds to the MQTT Broker driver, which carries every message the items send and
+receive. When you add the driver, it binds itself to the first MQTT Broker
+driver in the project.
 
-These bindings can be connected to other Control4 devices (thermostats, security
-panels, keypads, etc.) or used directly in programming.
+### {name} (provider, dynamic)
 
-### Programming
+Adding a relay, contact, button, temperature variable or humidity variable adds
+a connection named for the item:
 
-**Events:**
+| Item                 | Binding Class       | Purpose                                                 |
+| -------------------- | ------------------- | ------------------------------------------------------- |
+| Relay                | `RELAY`             | Takes on and off commands and reports the relay's state |
+| Contact              | `CONTACT_SENSOR`    | Reports whether the contact is open or closed           |
+| Button               | `BUTTON_LINK`       | Lets a bound device press the button                    |
+| Temperature variable | `TEMPERATURE_VALUE` | Reports the temperature in the item's Temperature Scale |
+| Humidity variable    | `HUMIDITY_VALUE`    | Reports the humidity                                    |
 
-- **Device Available** - Fires when availability payload is received
-- **Device Unavailable** - Fires when not-available payload is received
-- **{Event Name} Triggered** - Fires when an event item receives a matching MQTT
-  message
+### {name} (consumer, dynamic)
 
-**Conditionals:**
+Adding an event adds a `BUTTON_LINK` connection named for the item. Each time
+the event fires, a device bound here gets a button press, as from a keypad
+button.
 
-- **Device Available** - Check if the device is available or unavailable
+> **Note:** `{name}` is the item's name. A button's connection and an event's
+> connection have the same binding class but point opposite ways: a button lets
+> another device press it, and an event acts as a keypad button that drives the
+> device bound to it.
 
-**Commands:**
+# <span style="color:#660066">Programming</span>
 
-- **Press** - Press a button by name (for button items)
+## Events
 
-**Variables:**
+| Event              | Description                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Device Available   | Fires when the device changes from unavailable to available. Present only while [Availability Topic](#availability-topic) is set. |
+| Device Unavailable | Fires when the device changes from available to unavailable. Present only while Availability Topic is set.                        |
+| `{name} Triggered` | Fires when an event item receives a new message that passes its [Event Type Filter](#event-type-filter).                          |
 
-Variable-type items (STRING, BOOL, NUMBER, FLOAT, TEMPERATURE, HUMIDITY) create
-Control4 variables that can be read in conditionals and written to trigger
-publishing to the command topic.
+## Conditionals
+
+| Conditional                | Description                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Device availability status | Tests whether the device is `Available` or `Unavailable`. Present only while Availability Topic is set. |
+
+## Commands
+
+| Command | Parameters | Description                                                            |
+| ------- | ---------- | ---------------------------------------------------------------------- |
+| Press   | Button     | Publishes the chosen button item's Payload Press to its Command Topic. |
+
+## Variables
+
+| Variable            | Type                          | Description                                                                                                                           |
+| ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `{name}`            | STRING, BOOL, NUMBER or FLOAT | A string, bool, number or float item's value from its State Topic. Writable: setting it publishes the new value to its Command Topic. |
+| `{name}`            | FLOAT                         | A temperature or humidity item's last reading. Read-only.                                                                             |
+| `{name} State`      | STRING                        | A relay's `On` or `Off`, a contact's `Open` or `Closed`, or an event's last event type. Read-only.                                    |
+| Availability Status | STRING                        | `Available` or `Unavailable`. Read-only.                                                                                              |
+
+> **Note:** `{name}` is the item's name. The read-only variables appear once
+> their first value arrives.
 
 <!-- #ifdef DRIVERCENTRAL -->
 
