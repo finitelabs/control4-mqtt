@@ -16,6 +16,7 @@ local diagnostics = require("lib.diagnostics")
 --#endif
 --#ifndef DRIVERCENTRAL
 local githubUpdater = require("lib.github-updater")
+local driverFilenames = require("lib.driver-filenames")
 --#endif
 
 -- MQTT client instance
@@ -384,7 +385,6 @@ function Connect()
     lastMessages[topic] = {
       payload = payload,
       qos = qos,
-      retain = retain,
     }
     routeMessageToSubscribers(topic, payload, qos, retain)
   end)
@@ -437,7 +437,8 @@ function RFP.SUBSCRIBE(idBinding, strCommand, tParams, args)
     log:debug("Subscribing to topic: %s (qos=%s)", topic, qos)
     MQTT:Subscribe(topic, qos)
   elseif not isNewTopicSubscription then
-    -- Send cached message to new subscriber (broker won't re-send retained messages)
+    -- Send cached message to new subscriber (broker won't re-send retained messages).
+    -- Marked retained, as a broker marks what it sends because of a new subscription.
     local cached = lastMessages[topic]
     if cached then
       log:debug("Sending cached message to new subscriber: device=%s topic=%s", deviceId, topic)
@@ -445,7 +446,7 @@ function RFP.SUBSCRIBE(idBinding, strCommand, tParams, args)
         topic = topic,
         payload = cached.payload,
         qos = tostring(cached.qos),
-        retain = cached.retain and "true" or "false",
+        retain = "true",
       })
     end
   end
@@ -563,12 +564,7 @@ end
 function UpdateDrivers(forceUpdate)
   log:trace("UpdateDrivers(%s)", forceUpdate)
   githubUpdater
-    :updateAll(
-      DRIVER_GITHUB_REPO,
-      require("lib.driver-filenames"),
-      Properties["Update Channel"] == "Prerelease",
-      forceUpdate
-    )
+    :updateAll(DRIVER_GITHUB_REPO, driverFilenames, Properties["Update Channel"] == "Prerelease", forceUpdate)
     :next(function(updatedDrivers)
       if not IsEmpty(updatedDrivers) then
         log:info("Updated driver(s): %s", table.concat(updatedDrivers, ","))

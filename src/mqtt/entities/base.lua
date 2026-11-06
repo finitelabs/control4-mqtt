@@ -178,9 +178,10 @@ end
 
 --- Handle an incoming MQTT message. Override in subclass.
 --- @param payload string The raw MQTT payload.
+--- @param retained boolean|nil Whether this is a stored message rather than one just published.
 --- @return boolean changed Whether the state changed.
-function MqttEntity:onMessage(payload)
-  log:trace("%s:onMessage(%s)", self.TYPE, payload)
+function MqttEntity:onMessage(payload, retained)
+  log:trace("%s:onMessage(%s, %s)", self.TYPE, payload, retained)
   self._topicValue = payload
 
   -- Extract value using JSONPath if configured
@@ -193,14 +194,15 @@ function MqttEntity:onMessage(payload)
   end
 
   -- Subclasses override to handle the extracted value
-  return self:_processValue(extractedValue, payload)
+  return self:_processValue(extractedValue, payload, retained)
 end
 
 --- Process the extracted value. Override in subclass.
 --- @param value string The extracted value.
 --- @param rawPayload string The original raw payload.
+--- @param retained boolean|nil Whether this is a stored message rather than one just published.
 --- @return boolean changed Whether the state changed.
-function MqttEntity:_processValue(value, rawPayload)
+function MqttEntity:_processValue(value, rawPayload, retained)
   -- Base implementation does nothing
   return false
 end

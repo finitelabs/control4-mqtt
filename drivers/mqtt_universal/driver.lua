@@ -875,7 +875,7 @@ local function reevaluateState(itemId)
   if entity then
     local topicValue = entity:getTopicValue()
     if topicValue then
-      entity:onMessage(topicValue)
+      entity:onMessage(topicValue, true)
     end
   end
   updateItemConfigProperties()
@@ -974,8 +974,9 @@ function EC.MQTT_MESSAGE(tParams)
 
   local topic = Select(tParams, "topic")
   local payload = Select(tParams, "payload")
+  local retained = toboolean(Select(tParams, "retain"))
 
-  log:debug("Received MQTT message: topic=%s payload=%s", topic, payload)
+  log:debug("Received MQTT message: topic=%s payload=%s retained=%s", topic, payload, retained)
 
   -- Check global availability topic
   local availabilityTopic = Properties["Availability Topic"]
@@ -993,7 +994,7 @@ function EC.MQTT_MESSAGE(tParams)
     local item = getItem(itemId)
     if item and topic == item.stateTopic then
       log:info("Processing state for '%s': %s", item.name, payload)
-      entity:onMessage(payload)
+      entity:onMessage(payload, retained)
 
       -- Update properties if this is the selected item
       if getSelectedItemId() == itemId then
