@@ -902,7 +902,16 @@ local function reevaluateState(itemId)
   updateItemConfigProperties()
 end
 
-OPC.Temperature_Scale = createConfigHandler("temperatureScale", { default = "Celsius" })
+--- Tell a sensor item's bound devices its reading again, in the scale just set.
+--- @param itemId string Item ID.
+local function resendReading(itemId)
+  local entity = getEntity(itemId)
+  if entity and entity.sendValue then
+    entity:sendValue()
+  end
+end
+
+OPC.Temperature_Scale = createConfigHandler("temperatureScale", { default = "Celsius", postUpdate = resendReading })
 OPC.Value_Path = createConfigHandler("valuePath", { default = "", postUpdate = reevaluateState })
 OPC.State_On = createConfigHandler("stateOn", { default = "", postUpdate = reevaluateState })
 OPC.State_Off = createConfigHandler("stateOff", { default = "", postUpdate = reevaluateState })
