@@ -274,70 +274,28 @@ add it.
 
 #### Item Configuration
 
-These properties appear when an item is selected in "Configure Item". The
-available properties depend on the item type and configured topics.
+These properties are shown when an item is selected in
+[Configure Item](#configure-item--select--added-items-). Which ones appear
+depends on the item's type and on the topics it has.
 
 ##### State Topic
 
-The MQTT topic to subscribe for state updates.
+Shown for every item except a button. Sets the topic the item subscribes to for
+its state or value.
 
 ##### State Topic Value (read-only)
 
-Shows the raw payload received from the state topic.
+Shown only when the item has a [State Topic](#state-topic). Displays the last
+payload received on it.
 
-##### State (read-only)
+##### Value Path
 
-Shows the current state of the selected item (e.g., "On"/"Off" for relays,
-"Open"/"Closed" for contacts).
+Shown only when the item has a [State Topic](#state-topic). Sets a JSONPath that
+picks the value out of a JSON payload. Leave it empty to use the whole payload.
+The item's other settings then work on the value it picks.
 
-##### Command Topic
-
-The MQTT topic to publish commands to.
-
-##### Relay-Specific Properties
-
-These appear when a relay is selected:
-
-- **Payload On** - Payload to send for ON command (default: `ON`)
-- **Payload Off** - Payload to send for OFF command (default: `OFF`)
-- **State On** - Payload indicating ON state (if only this is set, other values
-  mean OFF)
-- **State Off** - Payload indicating OFF state (if only this is set, other
-  values mean ON)
-- **Optimistic** - Update state immediately on command (Auto: yes if no State
-  Topic)
-
-##### Contact-Specific Properties
-
-These appear when a contact is selected:
-
-- **State Open** - Payload indicating OPEN state (default: `OPEN`)
-- **State Closed** - Payload indicating CLOSED state (default: `CLOSED`)
-
-##### Button-Specific Properties
-
-These appear when a button is selected:
-
-- **Payload Press** - Payload to send when pressed (default: `PRESS`)
-
-g##### Event-Specific Properties
-
-These appear when an event is selected:
-
-- **Event Type Filter** - Comma-separated list of event types to accept (e.g.,
-  "press,hold"). Leave empty to accept all.
-
-##### JSONPath Properties
-
-These properties appear when a State Topic is configured:
-
-- **Value Path** - JSONPath expression to extract a value from a JSON payload.
-  Leave empty to use the raw payload. Supports dot notation for nested fields
-  and array indices.
-- **Value Path Result** (read-only) - Shows the extracted value or an error
-  message. Only appears when Value Path is configured.
-
-**JSONPath Examples:**
+A path starts with `$`, names nested fields with dots and picks an array entry
+by its index in brackets, counting from 0:
 
 | Payload                         | Value Path            | Result |
 | ------------------------------- | --------------------- | ------ |
@@ -346,19 +304,93 @@ These properties appear when a State Topic is configured:
 | `{"readings": [{"value": 42}]}` | `$.readings[0].value` | `42`   |
 | `{"data": [10, 20, 30]}`        | `$.data[1]`           | `20`   |
 
-##### Common Properties
+##### Value Path Result (read-only)
 
-These properties appear based on topic configuration:
+Shown only when the item has a State Topic and a [Value Path](#value-path).
+Displays the value the path picked from the last payload, or
+`Error: Invalid JSON` or `Error: Path not found`.
 
-- **QoS** - MQTT Quality of Service level (0, 1, or 2). Appears when State Topic
-  or Command Topic is configured.
-- **Retain** - Whether to retain published messages on the broker. Appears when
-  Command Topic is configured.
+##### State (read-only)
 
-##### Temperature-Specific Properties
+Shown only for a relay or contact with a State Topic. Displays `On` or `Off` for
+a relay and `Open` or `Closed` for a contact. It stays empty until a payload
+matches.
 
-- **Temperature Scale** - Scale of temperature values from MQTT: Celsius or
-  Fahrenheit.
+##### State On
+
+Shown only for a relay with a [State Topic](#state-topic). Sets the payload that
+means the relay is on. If only this is set, any other payload means off. If both
+State On and State Off are set, a payload that matches neither is ignored. A new
+item starts with both empty, and the relay shows no state until one is set.
+
+##### State Off
+
+Shown only for a relay with a State Topic. Sets the payload that means the relay
+is off. If only this is set, any other payload means on.
+
+##### Command Topic
+
+Shown for a relay, a button, and a string, bool, number or float variable. Sets
+the topic the item publishes to.
+
+##### Payload On
+
+Shown only for a relay with a [Command Topic](#command-topic). Sets the payload
+published when the relay turns on. A new item starts with it empty, so enter the
+payload your device expects: an empty field publishes an empty payload.
+
+##### Payload Off
+
+Shown only for a relay with a Command Topic. Sets the payload published when the
+relay turns off. Like Payload On, it starts empty.
+
+##### Optimistic \[ **_Auto_** | Yes | No \]
+
+Shown only for a relay. Sets whether the relay's state changes as soon as it
+publishes a command. `Auto` does so only when the item has no State Topic, `Yes`
+always does, and `No` waits for the State Topic. Default is `Auto`.
+
+##### State Open
+
+Shown only for a contact with a [State Topic](#state-topic). Sets the payload
+that means the contact is open. If only this is set, any other payload means
+closed. If both State Open and State Closed are set, a payload that matches
+neither is ignored. A new item starts with both empty, and the contact shows no
+state until one is set.
+
+##### State Closed
+
+Shown only for a contact with a State Topic. Sets the payload that means the
+contact is closed. If only this is set, any other payload means open.
+
+##### Payload Press
+
+Shown only for a button with a [Command Topic](#command-topic). Sets the payload
+published when the button is pressed, by the Press command or by a device bound
+to its connection. A new item starts with it empty, and an empty field publishes
+an empty payload.
+
+##### Event Type Filter
+
+Shown only for an event. Lists the event types the event accepts, separated by
+commas. A message whose value, after any Value Path, matches none of them is
+ignored. Leave it empty to accept every message.
+
+##### QoS \[ **_0_** | 1 | 2 \]
+
+Shown only when the item has a State Topic or a Command Topic. Sets the MQTT
+quality of service level the item subscribes and publishes with. Default is `0`.
+
+##### Retain \[ Yes | **_No_** \]
+
+Shown only when the item has a Command Topic. Sets whether the broker keeps the
+last message the item publishes for clients that subscribe later. Default is
+`No`.
+
+##### Temperature Scale \[ **_Celsius_** | Fahrenheit \]
+
+Shown only for a temperature variable. Sets the scale of the values on the State
+Topic, so its connection reports the right temperature. Default is `Celsius`.
 
 ## Connections
 

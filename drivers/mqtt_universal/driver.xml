@@ -267,7 +267,7 @@
         <name>Value Path</name>
         <type>STRING</type>
         <default/>
-        <description>JSONPath expression to extract value (e.g., "$.sensors.temperature" or "$.data[0].value"). Leave empty to use raw payload.</description>
+        <description>JSONPath to the value in the payload; leave empty to use the whole payload.</description>
       </property>
       <property>
         <name>Value Path Result</name>
@@ -350,7 +350,7 @@
         <name>Event Type Filter</name>
         <type>STRING</type>
         <default/>
-        <description>Comma-separated list of event types to accept (e.g., "press,hold"). Leave empty to accept all.</description>
+        <description>Event types to accept, separated by commas; leave empty to accept all.</description>
       </property>
       <!-- Common properties -->
       <property>
