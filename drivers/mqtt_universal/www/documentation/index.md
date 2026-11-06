@@ -48,12 +48,14 @@ integration with any MQTT-based system.
       - [Manage Items](#manage-items)
       - [Item Configuration](#item-configuration)
   - [Connections](#connections)
-  - [Programming](#programming)
+- [Programming](#programming)
+  - [Events](#events)
+  - [Conditionals](#conditionals)
+  - [Commands](#commands)
+  - [Variables](#variables)
   <!-- #ifdef DRIVERCENTRAL -->
 - [Developer Information](#developer-information)
-
-<!-- #endif -->
-
+  <!-- #endif -->
 - [Support](#support)
 - [Changelog](#changelog)
 
@@ -406,42 +408,69 @@ Topic, so its connection reports the right temperature. Default is `Celsius`.
 
 ## Connections
 
-When you add relays, contacts, buttons, or sensor variables, dynamic bindings
-are created that appear in the Connections tab:
+### MQTT Broker (consumer)
 
-- **Relays** create RELAY bindings
-- **Contacts** create CONTACT_SENSOR bindings
-- **Buttons** create BUTTON_LINK bindings (provider, for sending commands to
-  MQTT)
-- **Events** create BUTTON_LINK bindings (consumer, for triggering keypads)
-- **Temperature variables** create TEMPERATURE_VALUE bindings
-- **Humidity variables** create HUMIDITY_VALUE bindings
+Binds to the MQTT Broker driver, which carries every message the items send and
+receive. When you add the driver, it binds itself to the first MQTT Broker
+driver in the project.
 
-These bindings can be connected to other Control4 devices (thermostats, security
-panels, keypads, etc.) or used directly in programming.
+### {name} (provider, dynamic)
 
-### Programming
+Adding a relay, contact, button, temperature variable or humidity variable adds
+a connection named for the item:
 
-**Events:**
+| Item                 | Binding Class       | Purpose                                                 |
+| -------------------- | ------------------- | ------------------------------------------------------- |
+| Relay                | `RELAY`             | Takes on and off commands and reports the relay's state |
+| Contact              | `CONTACT_SENSOR`    | Reports whether the contact is open or closed           |
+| Button               | `BUTTON_LINK`       | Lets a bound device press the button                    |
+| Temperature variable | `TEMPERATURE_VALUE` | Reports the temperature in the item's Temperature Scale |
+| Humidity variable    | `HUMIDITY_VALUE`    | Reports the humidity                                    |
 
-- **Device Available** - Fires when availability payload is received
-- **Device Unavailable** - Fires when not-available payload is received
-- **{Event Name} Triggered** - Fires when an event item receives a matching MQTT
-  message
+### {name} (consumer, dynamic)
 
-**Conditionals:**
+Adding an event adds a `BUTTON_LINK` connection named for the item. Each time
+the event fires, a device bound here gets a button press, as from a keypad
+button.
 
-- **Device Available** - Check if the device is available or unavailable
+> **Note:** `{name}` is the item's name. A button's connection and an event's
+> connection have the same binding class but point opposite ways: a button lets
+> another device press it, and an event acts as a keypad button that drives the
+> device bound to it.
 
-**Commands:**
+# <span style="color:#660066">Programming</span>
 
-- **Press** - Press a button by name (for button items)
+## Events
 
-**Variables:**
+| Event              | Description                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Device Available   | Fires when the device changes from unavailable to available. Present only while [Availability Topic](#availability-topic) is set. |
+| Device Unavailable | Fires when the device changes from available to unavailable. Present only while Availability Topic is set.                        |
+| `{name} Triggered` | Fires when an event item receives a new message that passes its [Event Type Filter](#event-type-filter).                          |
 
-Variable-type items (STRING, BOOL, NUMBER, FLOAT, TEMPERATURE, HUMIDITY) create
-Control4 variables that can be read in conditionals and written to trigger
-publishing to the command topic.
+## Conditionals
+
+| Conditional                | Description                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Device availability status | Tests whether the device is `Available` or `Unavailable`. Present only while Availability Topic is set. |
+
+## Commands
+
+| Command | Parameters | Description                                                            |
+| ------- | ---------- | ---------------------------------------------------------------------- |
+| Press   | Button     | Publishes the chosen button item's Payload Press to its Command Topic. |
+
+## Variables
+
+| Variable            | Type                          | Description                                                                                                                           |
+| ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `{name}`            | STRING, BOOL, NUMBER or FLOAT | A string, bool, number or float item's value from its State Topic. Writable: setting it publishes the new value to its Command Topic. |
+| `{name}`            | FLOAT                         | A temperature or humidity item's last reading. Read-only.                                                                             |
+| `{name} State`      | STRING                        | A relay's `On` or `Off`, a contact's `Open` or `Closed`, or an event's last event type. Read-only.                                    |
+| Availability Status | STRING                        | `Available` or `Unavailable`. Read-only.                                                                                              |
+
+> **Note:** `{name}` is the item's name. The read-only variables appear once
+> their first value arrives.
 
 <!-- #ifdef DRIVERCENTRAL -->
 
