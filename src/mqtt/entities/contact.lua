@@ -6,7 +6,7 @@
 local log = require("lib.logging")
 local bindings = require("lib.bindings")
 local values = require("lib.values")
-local stateParser = require("mqtt.state_parser")
+local StateParser = require("mqtt.state_parser")
 local MqttEntity = require("mqtt.entities.base")
 
 --- The bound contact driver's ContactState variable: "0" open, "1" closed.
@@ -18,31 +18,29 @@ local MqttContact = setmetatable({
   BINDING_TYPE = "PROXY",
   BINDINGS_NAMESPACE = "MqttContact",
 }, { __index = MqttEntity })
+MqttContact.__index = MqttContact
 
 --- Create a new contact entity instance.
 --- @param item table The item configuration.
 --- @param brokerBinding number The broker binding ID.
---- @return MqttContact
+--- @return MqttContact instance A new contact entity.
 function MqttContact:new(item, brokerBinding)
-  local instance = MqttEntity.new(self, item, brokerBinding)
-  setmetatable(instance, self)
-  self.__index = self
-  return instance
+  return MqttEntity.new(self, item, brokerBinding)
 end
 
 --- Get the binding key for this contact.
---- @return string
+--- @return string key The binding key.
 function MqttContact:getBindingKey()
   return "item_" .. self:getId()
 end
 
 --- Parse contact state from payload using "match one, default other" logic.
 --- @param value string The payload value.
---- @return boolean|nil
+--- @return boolean|nil isOpen True = open, false = closed, nil if the payload says neither.
 function MqttContact:parseState(value)
   local stateOpen = self.item.stateOpen or ""
   local stateClosed = self.item.stateClosed or ""
-  return stateParser.parse(value, stateOpen, stateClosed)
+  return StateParser.parse(value, stateOpen, stateClosed)
 end
 
 --- Get the current contact state.
@@ -52,7 +50,7 @@ function MqttContact:getState()
 end
 
 --- Get state as display text.
---- @return string
+--- @return string text "Open", "Closed", or empty while unknown.
 function MqttContact:getStateText()
   if self._state == nil then
     return ""
@@ -61,7 +59,7 @@ function MqttContact:getStateText()
 end
 
 --- The item's state variable.
---- @return string[] names
+--- @return string[] names The variable names.
 function MqttContact:getVariableNames()
   return { self:getStateVarName() }
 end
@@ -73,25 +71,24 @@ end
 
 --- Process the extracted value and update state.
 --- @param value string The extracted value.
---- @param rawPayload string The original raw payload.
+--- @param _rawPayload string The original raw payload.
 --- @return boolean changed Whether the state changed.
-function MqttContact:_processValue(value, rawPayload)
+function MqttContact:_processValue(value, _rawPayload)
   local isOpen = self:parseState(value)
   if isOpen == nil then
     log:debug("Contact '%s' - could not parse state from: %s", self:getName(), value)
     return false
   end
 
-  return self:_updateState(isOpen, rawPayload)
+  return self:_updateState(isOpen)
 end
 
 --- Update the contact state and notify binding.
 --- The first state heard since start or a broker rebind is sent silently, unless
 --- the bound contact shows the other state.
 --- @param isOpen boolean The new state (true = open).
---- @param payload string|nil The raw payload (for display).
 --- @return boolean changed Whether the state changed.
-function MqttContact:_updateState(isOpen, payload)
+function MqttContact:_updateState(isOpen)
   local eventful = self._state ~= nil
   local changed = self._state ~= isOpen
   self._state = isOpen
@@ -101,11 +98,8 @@ function MqttContact:_updateState(isOpen, payload)
   end
 
   local stateText = self:getStateText()
-
-  -- Update C4 variable for programming
   values:update(self:getStateVarName(), stateText, "STRING")
 
-  -- Notify binding
   local binding = bindings:getDynamicBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
   if binding then
     if eventful or self:_boundDeviceShowsOther(binding.bindingId, CONTACT_STATE_VARIABLE, isOpen and "0" or "1") then
@@ -151,7 +145,6 @@ function MqttContact:registerBinding()
   log:info("Registered CONTACT_SENSOR binding for '%s' (bindingId=%s)", self:getName(), binding.bindingId)
 
   -- Contact sensors are read-only, no RFP handler needed
-  -- Register OBC handler for binding changes
   local entity = self
   OBC[binding.bindingId] = function(idBinding, _strClass, bIsBound, otherDeviceId, _otherBindingId)
     log:debug("OBC[%s] bIsBound=%s otherDeviceId=%s", idBinding, bIsBound, otherDeviceId)

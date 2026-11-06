@@ -8,22 +8,26 @@
 --- @field _lastAvailabilityPayload string|nil Last raw availability payload.
 --- @field _previousAvailabilityTopic string|nil Previous availability topic.
 
+local JSON = require("JSON")
 local log = require("lib.logging")
 local values = require("lib.values")
 local events = require("lib.events")
 local conditionals = require("lib.conditionals")
-local stateParser = require("mqtt.state_parser")
+local StateParser = require("mqtt.state_parser")
 
 local EVENTS_NAMESPACE = "MQTTUniversal"
 local AVAILABILITY_VARIABLE = "Availability Status"
 
-local MqttDevice = {
-  brokerBinding = nil,
-  _connected = false,
-  _available = nil,
-  _lastAvailabilityPayload = nil,
-  _previousAvailabilityTopic = nil,
-}
+local MqttDevice = {}
+MqttDevice.__index = MqttDevice
+
+--- Create the device entity.
+--- @return MqttDevice instance A new device entity.
+function MqttDevice:new()
+  local instance = setmetatable({}, self)
+  instance._connected = false
+  return instance
+end
 
 --- Initialize the device with the broker binding.
 --- @param brokerBinding number The broker binding ID.
@@ -36,7 +40,7 @@ function MqttDevice:init(brokerBinding)
 end
 
 --- Check if the broker is connected.
---- @return boolean
+--- @return boolean connected True if the broker is connected.
 function MqttDevice:isConnected()
   return self._connected
 end
@@ -68,18 +72,18 @@ end
 --- @param payload string The payload to parse.
 --- @param payloadAvailable string|nil Value indicating available.
 --- @param payloadNotAvailable string|nil Value indicating unavailable.
---- @return boolean|nil
+--- @return boolean|nil available True if available, false if not, nil if the payload says neither.
 function MqttDevice:parseAvailability(payload, payloadAvailable, payloadNotAvailable)
-  return stateParser.parse(payload, payloadAvailable or "", payloadNotAvailable or "")
+  return StateParser.parse(payload, payloadAvailable or "", payloadNotAvailable or "")
 end
 
 --- Extract value from payload using JSONPath.
 --- @param payload string The raw payload.
 --- @param jsonPath string|nil The JSONPath expression.
---- @return string|nil extractedValue
---- @return string|nil resultMessage
+--- @return string|nil extractedValue The extracted value, or nil on error.
+--- @return string|nil resultMessage The extraction result message for display.
 function MqttDevice:extractValue(payload, jsonPath)
-  if not jsonPath or jsonPath == "" then
+  if IsEmpty(jsonPath) then
     return payload, nil
   end
 
@@ -88,7 +92,7 @@ function MqttDevice:extractValue(payload, jsonPath)
     return nil, "Error: Invalid JSON"
   end
 
-  local value = stateParser.extractJsonPath(jsonTable, jsonPath)
+  local value = StateParser.extractJsonPath(jsonTable, jsonPath)
   if value == nil then
     return nil, "Error: Path not found"
   end
@@ -103,11 +107,8 @@ end
 function MqttDevice:updateAvailability(rawPayload, config)
   log:trace("MqttDevice:updateAvailability(%s)", rawPayload)
   self._lastAvailabilityPayload = rawPayload
-
-  -- Update topic value property
   UpdateProperty("Availability Topic Value", rawPayload or "")
 
-  -- Extract value using JSONPath if configured
   local effectivePayload, pathResult = self:extractValue(rawPayload, config.valuePath)
 
   if not IsEmpty(config.valuePath) then
@@ -173,7 +174,6 @@ function MqttDevice:subscribeToAvailability(topic, deviceId)
     return
   end
 
-  -- Unsubscribe from previous topic if changed
   if self._previousAvailabilityTopic and self._previousAvailabilityTopic ~= topic then
     log:debug("Unsubscribing from previous availability topic: %s", self._previousAvailabilityTopic)
     SendToProxy(self.brokerBinding, "UNSUBSCRIBE", {
@@ -182,7 +182,6 @@ function MqttDevice:subscribeToAvailability(topic, deviceId)
     })
   end
 
-  -- Subscribe to new topic
   if not IsEmpty(topic) then
     log:debug("Subscribing to availability topic: %s", topic)
     SendToProxy(self.brokerBinding, "SUBSCRIBE", {
@@ -199,9 +198,8 @@ end
 --- Once declared they stay with no topic set too: deleting an event deletes the programming on it.
 --- @param hasAvailabilityTopic boolean Whether availability topic is configured.
 function MqttDevice:registerAvailabilityEvents(hasAvailabilityTopic)
-  if
-    not hasAvailabilityTopic and Select(conditionals:getConditionals(), EVENTS_NAMESPACE, "device_available") == nil
-  then
+  local declared = Select(conditionals:getConditionals(), EVENTS_NAMESPACE, "device_available") ~= nil
+  if not hasAvailabilityTopic and not declared then
     return
   end
 
@@ -240,4 +238,4 @@ function MqttDevice:reset()
   self._previousAvailabilityTopic = nil
 end
 
-return MqttDevice
+return MqttDevice:new()

@@ -3,6 +3,7 @@
 --- @class MqttVariable:MqttEntity
 --- @field _state any Current variable value.
 --- @field variableType string The C4 variable type.
+--- @field defaultValue string|nil The value a new variable starts with.
 
 require("lib.utils")
 local log = require("lib.logging")
@@ -21,17 +22,14 @@ local VARIABLE_TYPES = {
 local MqttVariable = setmetatable({
   TYPE = "VARIABLE",
 }, { __index = MqttEntity })
+MqttVariable.__index = MqttVariable
 
 --- Create a new variable entity instance.
 --- @param item table The item configuration.
 --- @param brokerBinding number The broker binding ID.
---- @return MqttVariable
+--- @return MqttVariable instance A new variable entity.
 function MqttVariable:new(item, brokerBinding)
   local instance = MqttEntity.new(self, item, brokerBinding)
-  setmetatable(instance, self)
-  self.__index = self
-
-  -- Store the variable type info
   local typeInfo = VARIABLE_TYPES[item.itemType]
   if typeInfo then
     instance.variableType = typeInfo.c4VarType
@@ -43,9 +41,9 @@ end
 
 --- Process the extracted value and update the variable.
 --- @param value string The extracted value.
---- @param rawPayload string The original raw payload.
+--- @param _rawPayload string The original raw payload.
 --- @return boolean changed Whether the value changed.
-function MqttVariable:_processValue(value, rawPayload)
+function MqttVariable:_processValue(value, _rawPayload)
   if (self.variableType == "FLOAT" or self.variableType == "NUMBER") and tofinite(value) == nil then
     log:warn("Invalid %s value for variable '%s': %s", self.variableType, self:getName(), value)
     return false
@@ -85,10 +83,10 @@ function MqttVariable:createVariableCallback()
 end
 
 --- Register the C4 variable with an optional initial value.
---- @param initialValue any|nil Initial value (uses default if nil).
+--- @param initialValue? any Initial value (uses default if nil).
 function MqttVariable:registerVariable(initialValue)
   if not self.variableType then
-    log:warn("Cannot register variable '%s' - unknown type", self:getName())
+    log:warn("Cannot register variable '%s'; unknown type", self:getName())
     return
   end
 
@@ -98,13 +96,13 @@ function MqttVariable:registerVariable(initialValue)
 end
 
 --- The item's variable.
---- @return string[] names
+--- @return string[] names The variable names.
 function MqttVariable:getVariableNames()
   return { self:getName() }
 end
 
 --- Variables don't have bindings.
---- @return nil
+--- @return nil binding Always nil.
 function MqttVariable:registerBinding()
   return nil
 end
@@ -116,7 +114,7 @@ end
 
 --- Check if this is a supported variable type.
 --- @param itemType string The item type to check.
---- @return boolean
+--- @return boolean supported True if the type is a variable type.
 function MqttVariable.isVariableType(itemType)
   return VARIABLE_TYPES[itemType] ~= nil
 end

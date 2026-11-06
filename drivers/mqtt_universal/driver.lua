@@ -26,7 +26,7 @@ local diagnostics = require("lib.diagnostics")
 local values = require("lib.values")
 
 -- MQTT entity modules
-local MqttDevice = require("mqtt.entities.device")
+local mqttDevice = require("mqtt.entities.device")
 local MqttRelay = require("mqtt.entities.relay")
 local MqttContact = require("mqtt.entities.contact")
 local MqttButton = require("mqtt.entities.button")
@@ -177,7 +177,7 @@ end
 --- Subscribe to topics for an entity
 --- @param entity MqttEntity Entity instance
 local function subscribeEntity(entity)
-  if not MqttDevice:isConnected() then
+  if not mqttDevice:isConnected() then
     return
   end
   local deviceId = tostring(C4:GetDeviceID())
@@ -194,7 +194,7 @@ local function subscribeAllEntities()
   -- Subscribe to availability
   local availabilityTopic = Properties["Availability Topic"]
   local deviceId = tostring(C4:GetDeviceID())
-  MqttDevice:subscribeToAvailability(availabilityTopic, deviceId)
+  mqttDevice:subscribeToAvailability(availabilityTopic, deviceId)
 end
 
 -----------------------------------------------------------------------
@@ -378,7 +378,7 @@ local function updateItemConfig(itemId, config)
     entity.item = item
 
     -- Subscribe to new topic if needed
-    if MqttDevice:isConnected() and config.stateTopic ~= nil then
+    if mqttDevice:isConnected() and config.stateTopic ~= nil then
       if not IsEmpty(item.stateTopic) then
         entity:subscribe(deviceId)
       end
@@ -636,7 +636,7 @@ function OnDriverInit()
   log:setLogMode(Properties["Log Mode"])
   log:trace("OnDriverInit()")
 
-  MqttDevice:init(MQTT_BINDING)
+  mqttDevice:init(MQTT_BINDING)
 
   -- Restore values and bindings from persistent storage
   values:restoreValues()
@@ -666,11 +666,11 @@ function OnDriverLateInit()
     end
   end
   gInitialized = true
-  MqttDevice:refreshStatus()
+  mqttDevice:refreshStatus()
 
   -- Re-register availability events/conditional
   local hasAvailabilityTopic = not IsEmpty(Properties["Availability Topic"])
-  MqttDevice:registerAvailabilityEvents(hasAvailabilityTopic)
+  mqttDevice:registerAvailabilityEvents(hasAvailabilityTopic)
 
   updateAvailabilityPropertyVisibility()
   updateItemProperties()
@@ -747,15 +747,15 @@ function OPC.Availability_Topic(propertyValue)
     return
   end
 
-  MqttDevice:clearAvailability()
+  mqttDevice:clearAvailability()
   if IsEmpty(propertyValue) then
     log:info("Availability Topic cleared; availability is no longer tracked")
   else
-    MqttDevice:registerAvailabilityEvents(true)
+    mqttDevice:registerAvailabilityEvents(true)
   end
 
   local deviceId = tostring(C4:GetDeviceID())
-  MqttDevice:subscribeToAvailability(propertyValue, deviceId)
+  mqttDevice:subscribeToAvailability(propertyValue, deviceId)
   updateAvailabilityPropertyVisibility()
 end
 
@@ -764,7 +764,7 @@ function OPC.Payload_Available(propertyValue)
   if not gInitialized then
     return
   end
-  MqttDevice:reevaluateAvailability({
+  mqttDevice:reevaluateAvailability({
     valuePath = Properties["Availability Value Path"],
     payloadAvailable = propertyValue,
     payloadNotAvailable = Properties["Payload Not Available"],
@@ -776,7 +776,7 @@ function OPC.Payload_Not_Available(propertyValue)
   if not gInitialized then
     return
   end
-  MqttDevice:reevaluateAvailability({
+  mqttDevice:reevaluateAvailability({
     valuePath = Properties["Availability Value Path"],
     payloadAvailable = Properties["Payload Available"],
     payloadNotAvailable = propertyValue,
@@ -788,7 +788,7 @@ function OPC.Availability_Value_Path(propertyValue)
   if not gInitialized then
     return
   end
-  MqttDevice:reevaluateAvailability({
+  mqttDevice:reevaluateAvailability({
     valuePath = propertyValue,
     payloadAvailable = Properties["Payload Available"],
     payloadNotAvailable = Properties["Payload Not Available"],
@@ -932,7 +932,7 @@ function RFP.BROKER_CONNECTED(idBinding, strCommand, tParams, args)
     return
   end
 
-  MqttDevice:setConnected(true)
+  mqttDevice:setConnected(true)
   subscribeAllEntities()
 end
 
@@ -942,7 +942,7 @@ function RFP.BROKER_DISCONNECTED(idBinding, strCommand, tParams, args)
     return
   end
 
-  MqttDevice:setConnected(false)
+  mqttDevice:setConnected(false)
 end
 
 -----------------------------------------------------------------------
@@ -951,11 +951,11 @@ end
 
 OBC[MQTT_BINDING] = function(idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
   log:trace("OBC[MQTT_BINDING](%s, %s, %s, %s, %s)", idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
-  MqttDevice:reset()
+  mqttDevice:reset()
   for _, entity in pairs(entities) do
     entity:reset()
   end
-  MqttDevice:refreshStatus()
+  mqttDevice:refreshStatus()
   if bIsBound then
     SendToProxy(MQTT_BINDING, "GET_STATUS", {}, "NOTIFY")
   end
@@ -1001,7 +1001,7 @@ function EC.MQTT_MESSAGE(tParams)
   -- Check global availability topic
   local availabilityTopic = Properties["Availability Topic"]
   if not IsEmpty(availabilityTopic) and topic == availabilityTopic then
-    MqttDevice:updateAvailability(payload, {
+    mqttDevice:updateAvailability(payload, {
       valuePath = Properties["Availability Value Path"],
       payloadAvailable = Properties["Payload Available"],
       payloadNotAvailable = Properties["Payload Not Available"],
