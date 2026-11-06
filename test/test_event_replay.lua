@@ -130,7 +130,8 @@ T.section("a state item still takes a stored message")
 
 do
   local MqttRelay = require("mqtt.entities.relay")
-  local relay = MqttRelay:new({ id = "r1", name = "Pump", stateTopic = "pump/state", stateOn = "ON", stateOff = "OFF" }, 1)
+  local relay =
+    MqttRelay:new({ id = "r1", name = "Pump", stateTopic = "pump/state", stateOn = "ON", stateOff = "OFF" }, 1)
   relay:onMessage("ON", true)
   T.eq("a retained ON sets a relay item on", relay:getState(), true)
 end

@@ -564,12 +564,7 @@ end
 function UpdateDrivers(forceUpdate)
   log:trace("UpdateDrivers(%s)", forceUpdate)
   githubUpdater
-    :updateAll(
-      DRIVER_GITHUB_REPO,
-      driverFilenames,
-      Properties["Update Channel"] == "Prerelease",
-      forceUpdate
-    )
+    :updateAll(DRIVER_GITHUB_REPO, driverFilenames, Properties["Update Channel"] == "Prerelease", forceUpdate)
     :next(function(updatedDrivers)
       if not IsEmpty(updatedDrivers) then
         log:info("Updated driver(s): %s", table.concat(updatedDrivers, ","))

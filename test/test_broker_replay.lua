@@ -83,7 +83,8 @@ end
 local delivered = {}
 function C4:SendToDevice(deviceId, command, params)
   if command == "MQTT_MESSAGE" then
-    delivered[#delivered + 1] = { deviceId = deviceId, topic = params.topic, payload = params.payload, retain = params.retain }
+    delivered[#delivered + 1] =
+      { deviceId = deviceId, topic = params.topic, payload = params.payload, retain = params.retain }
   end
 end
 C4.SendToProxy = function() end
