@@ -260,6 +260,34 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   pressing a bound button, when the driver was updated, the MQTT Broker
   reconnected or an item's settings were changed. An event item now fires only
   when a new message arrives.
+- Fixed MQTT Universal skipping the Device Available and Device Unavailable
+  programming for an availability change made while the controller was down, and
+  showing `Connected` for a device that was already unavailable when the driver
+  started.
+- Fixed clearing MQTT Universal's `Availability Topic` deleting the Device
+  Available and Device Unavailable events and the programming on them. The
+  events now stay, and the availability readings go blank.
+- Fixed MQTT Universal's relay, contact and event State variables and its
+  Availability Status variable missing from programming until the first message
+  arrived. They now appear, empty, as soon as the item is added or the
+  `Availability Topic` is set.
+- Fixed removing an MQTT Universal temperature or humidity item leaving its
+  variable behind.
+- Fixed MQTT Universal adding an item whose variable was already in use by
+  another item, by Availability Status or by a property, so the two overwrote
+  each other. The item is now refused, and the Add property says which variable
+  is in use.
+- Fixed MQTT Universal temperature and humidity items sending bound devices the
+  same reading again with every message. A reading now goes out only when it
+  changes.
+- Fixed an MQTT Universal variable item keeping a value from Control4
+  programming that the device refused. The variable now shows the device's value
+  again at its next report.
+- Fixed MQTT Universal's `6 - Ultra` logging not starting when `Log Mode` was
+  turned on and not stopping when it turned off. `Log Level` now also returns to
+  `3 - Info` when logging turns off, as on the MQTT Broker.
+- Fixed MQTT Universal sometimes not finishing its start when one of its
+  settings hit an error while loading.
 - Fixed the MQTT Broker printing its password to the Lua output when debug
   printing was on.
 - Fixed the MQTT Broker waiting 30 seconds to reconnect after every drop. It now

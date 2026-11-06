@@ -11,6 +11,8 @@ require("drivers-common-public.global.handlers")
 require("drivers-common-public.global.lib")
 require("drivers-common-public.global.timer")
 
+JSON = require("JSON")
+
 local bindings = require("lib.bindings")
 local events = require("lib.events")
 local log = require("lib.logging")
@@ -24,7 +26,7 @@ local diagnostics = require("lib.diagnostics")
 local values = require("lib.values")
 
 -- MQTT entity modules
-local MqttDevice = require("mqtt.entities.device")
+local mqttDevice = require("mqtt.entities.device")
 local MqttRelay = require("mqtt.entities.relay")
 local MqttContact = require("mqtt.entities.contact")
 local MqttButton = require("mqtt.entities.button")
@@ -62,22 +64,22 @@ local entities = {}
 -- Item storage functions
 -----------------------------------------------------------------------
 
---- Get all items from persistent storage
---- @return table<string, table> Items indexed by ID
+--- Get all items from persistent storage.
+--- @return table<string, table> items Items indexed by ID.
 local function getItems()
   log:trace("getItems()")
   return persist:get(ITEMS_PERSIST_KEY, {}) or {}
 end
 
---- Save items to persistent storage
---- @param items table<string, table> Items to save
+--- Save items to persistent storage.
+--- @param items table<string, table> Items to save.
 local function saveItems(items)
   log:trace("saveItems(%s)", items)
   persist:set(ITEMS_PERSIST_KEY, not IsEmpty(items) and items or nil)
 end
 
---- Get the next available item ID
---- @return number Next available ID
+--- Get the next available item ID.
+--- @return number itemId The next available ID.
 local function getNextItemId()
   log:trace("getNextItemId()")
   local items = getItems()
@@ -88,18 +90,18 @@ local function getNextItemId()
   return id
 end
 
---- Get a single item by ID
---- @param itemId string|number Item ID
---- @return table|nil Item data or nil if not found
+--- Get a single item by ID.
+--- @param itemId string|number Item ID.
+--- @return table|nil item Item data, or nil if not found.
 local function getItem(itemId)
   log:trace("getItem(%s)", itemId)
   local items = getItems()
   return items[tostring(itemId)]
 end
 
---- Parse item ID from display name format "Name (TYPE) [ID]"
---- @param displayName string Display name from dynamic list
---- @return string|nil Item ID or nil
+--- Parse item ID from display name format "Name (TYPE) [ID]".
+--- @param displayName string Display name from dynamic list.
+--- @return string|nil itemId The item ID, or nil.
 local function parseItemId(displayName)
   log:trace("parseItemId(%s)", displayName)
   return string.match(displayName or "", "%[(%d+)%]$")
@@ -116,7 +118,7 @@ local function getSelectedItemId()
 end
 
 --- Get the currently selected item for configuration.
---- @return table|nil Selected item or nil.
+--- @return table|nil item The selected item, or nil.
 local function getSelectedItem()
   log:trace("getSelectedItem()")
   local itemId = getSelectedItemId()
@@ -126,15 +128,15 @@ local function getSelectedItem()
   return getItem(itemId)
 end
 
---- Get entity instance for an item
---- @param itemId string|number Item ID
---- @return MqttEntity|nil Entity instance or nil
+--- Get entity instance for an item.
+--- @param itemId string|number Item ID.
+--- @return MqttEntity|nil entity The entity instance, or nil.
 local function getEntity(itemId)
   return entities[tostring(itemId)]
 end
 
---- Get currently selected entity
---- @return MqttEntity|nil
+--- Get currently selected entity.
+--- @return MqttEntity|nil entity The selected entity, or nil.
 local function getSelectedEntity()
   local itemId = getSelectedItemId()
   if itemId == nil then
@@ -143,9 +145,9 @@ local function getSelectedEntity()
   return getEntity(itemId)
 end
 
---- Create an entity instance for an item
---- @param item table Item data
---- @return MqttEntity|nil Entity instance
+--- Create an entity instance for an item.
+--- @param item table Item data.
+--- @return MqttEntity|nil entity The entity instance, or nil for an unknown type.
 local function createEntity(item)
   local EntityClass = ENTITY_CLASSES[item.itemType]
   if EntityClass == nil then
@@ -175,7 +177,7 @@ end
 --- Subscribe to topics for an entity
 --- @param entity MqttEntity Entity instance
 local function subscribeEntity(entity)
-  if not MqttDevice:isConnected() then
+  if not mqttDevice:isConnected() then
     return
   end
   local deviceId = tostring(C4:GetDeviceID())
@@ -192,14 +194,13 @@ local function subscribeAllEntities()
   -- Subscribe to availability
   local availabilityTopic = Properties["Availability Topic"]
   local deviceId = tostring(C4:GetDeviceID())
-  MqttDevice:subscribeToAvailability(availabilityTopic, deviceId)
+  mqttDevice:subscribeToAvailability(availabilityTopic, deviceId)
 end
 
 -----------------------------------------------------------------------
 -- Item management
 -----------------------------------------------------------------------
 
---- Add a new item
 --- Check if an item with the given name already exists.
 --- @param name string Item name to check.
 --- @return boolean exists True if an item with this name exists.
@@ -213,16 +214,53 @@ local function itemNameExists(name)
   return false
 end
 
---- @param name string Item name
---- @param itemType string Item type
---- @return string|nil Item ID, or nil if name already exists
+--- The key OnVariableChanged finds a variable's handler by: its name with each run of spaces as one underscore.
+--- @param name string The variable name.
+--- @return string key The handler key.
+local function variableKey(name)
+  return (string.gsub(name, "%s+", "_"))
+end
+
+--- The first variable a new item would own that is taken: by another item, by the driver's Availability Status,
+--- or by a property, which a variable of the same name would overwrite.
+--- @param name string The new item's name.
+--- @param itemType string The new item's type.
+--- @return string|nil variable The taken variable's name, or nil when all are free.
+local function takenVariableName(name, itemType)
+  local EntityClass = ENTITY_CLASSES[itemType]
+  if EntityClass == nil then
+    return nil
+  end
+  local taken = { [variableKey("Availability Status")] = true }
+  for _, entity in pairs(entities) do
+    for _, variable in ipairs(entity:getVariableNames()) do
+      taken[variableKey(variable)] = true
+    end
+  end
+  for _, variable in ipairs(EntityClass:new({ name = name, itemType = itemType }, MQTT_BINDING):getVariableNames()) do
+    if taken[variableKey(variable)] or Properties[variable] ~= nil then
+      return variable
+    end
+  end
+  return nil
+end
+
+--- Add a new item.
+--- @param name string Item name.
+--- @param itemType string Item type.
+--- @return string|nil itemId The new item's ID, or nil when its name or a variable it would own is taken.
+--- @return string|nil reason Why the item was not added.
 local function addItem(name, itemType)
   log:trace("addItem(%s, %s)", name, itemType)
 
-  -- Validate unique name
   if itemNameExists(name) then
     log:print("Item with name '%s' already exists", name)
-    return nil
+    return nil, "Item with name '" .. name .. "' already exists"
+  end
+  local takenVariable = takenVariableName(name, itemType)
+  if takenVariable then
+    log:print("Item '%s' not added; variable '%s' is already in use", name, takenVariable)
+    return nil, "Variable '" .. takenVariable .. "' is already in use"
   end
 
   local items = getItems()
@@ -260,17 +298,14 @@ local function addItem(name, itemType)
   items[tostring(itemId)] = itemData
   saveItems(items)
 
-  -- Create entity instance
   local entity = createEntity(itemData)
   if entity == nil then
     log:error("Failed to create entity for item %s", name)
     return tostring(itemId)
   end
 
-  -- Register binding if applicable
   entity:registerBinding()
-
-  -- Register variable for variable types
+  entity:seedVariables()
   if MqttVariable.isVariableType(itemType) then
     entity:registerVariable()
   end
@@ -293,28 +328,15 @@ local function deleteItem(itemId)
 
   local entity = getEntity(itemId)
   if entity then
-    -- Unsubscribe from topics
     local deviceId = tostring(C4:GetDeviceID())
     entity:unsubscribe(deviceId)
 
-    -- Unregister binding
     entity:unregisterBinding()
+    entity:deleteVariables()
 
-    -- Delete variable for variable types
-    if MqttVariable.isVariableType(item.itemType) then
-      entity:deleteVariable()
-    end
-
-    -- Delete state variable for relays, contacts, and events
-    if item.itemType == "RELAY" or item.itemType == "CONTACT" or item.itemType == "EVENT" then
-      values:delete(entity:getStateVarName())
-    end
-
-    -- Destroy entity
     destroyEntity(itemId)
   end
 
-  -- Remove from storage
   items[tostring(itemId)] = nil
   saveItems(items)
 
@@ -346,7 +368,6 @@ local function updateItemConfig(itemId, config)
     end
   end
 
-  -- Update configuration
   for key, value in pairs(config) do
     item[key] = value
   end
@@ -357,7 +378,7 @@ local function updateItemConfig(itemId, config)
     entity.item = item
 
     -- Subscribe to new topic if needed
-    if MqttDevice:isConnected() and config.stateTopic ~= nil then
+    if mqttDevice:isConnected() and config.stateTopic ~= nil then
       if not IsEmpty(item.stateTopic) then
         entity:subscribe(deviceId)
       end
@@ -375,7 +396,6 @@ end
 local function updateItemProperties()
   log:trace("updateItemProperties()")
 
-  -- Clear add property fields
   UpdateProperty("Add Relay", "")
   UpdateProperty("Add Contact", "")
   UpdateProperty("Add Button", "")
@@ -387,7 +407,6 @@ local function updateItemProperties()
   UpdateProperty("Add Temperature Variable", "")
   UpdateProperty("Add Humidity Variable", "")
 
-  -- Build item list
   local itemList = {}
   for _, item in pairs(getItems()) do
     table.insert(itemList, item.displayName)
@@ -396,7 +415,6 @@ local function updateItemProperties()
   table.insert(itemList, 1, SELECT_OPTION)
   local itemOptions = table.concat(itemList, ",")
 
-  -- Update dynamic lists
   C4:UpdatePropertyList("Remove Item", itemOptions, SELECT_OPTION)
   C4:UpdatePropertyList("Configure Item", itemOptions, SELECT_OPTION)
 
@@ -531,7 +549,6 @@ local function updateItemConfigProperties()
     hasValuePath = hasItem and not IsEmpty(item.valuePath),
   }
 
-  -- Apply visibility rules
   for propName, predicate in pairs(VISIBILITY_RULES) do
     local visible = predicate(ctx)
     C4:SetPropertyAttribs(propName, visible and constants.SHOW_PROPERTY or constants.HIDE_PROPERTY)
@@ -542,7 +559,6 @@ local function updateItemConfigProperties()
     return
   end
 
-  -- Apply property value mappings
   for propName, mapping in pairs(PROPERTY_VALUES) do
     local value
     if type(mapping) == "function" then
@@ -587,14 +603,11 @@ end
 local function restoreItems()
   log:trace("restoreItems()")
 
-  -- Create entity instances for all items
   for itemId, item in pairs(getItems()) do
     local entity = createEntity(item)
     if entity then
-      -- Restore binding and handlers
       entity:registerBinding()
-
-      -- Re-register variable callbacks
+      entity:seedVariables()
       if MqttVariable.isVariableType(item.itemType) then
         local currentValue = values:getValue(item.name)
         local value = currentValue and currentValue.value or ""
@@ -623,8 +636,7 @@ function OnDriverInit()
   log:setLogMode(Properties["Log Mode"])
   log:trace("OnDriverInit()")
 
-  -- Initialize MqttDevice
-  MqttDevice:init(MQTT_BINDING)
+  mqttDevice:init(MQTT_BINDING)
 
   -- Restore values and bindings from persistent storage
   values:restoreValues()
@@ -643,25 +655,26 @@ function OnDriverLateInit()
   -- Restore items and their callbacks/bindings
   restoreItems()
 
-  -- Fire OnPropertyChanged to set the initial Headers and other Property
+  -- Fire OnPropertyChanged once per property to set initial globals.
   for p, _ in pairs(Properties) do
     local status, err = pcall(OnPropertyChanged, p)
-    if not status and err ~= nil then
-      log:error(err)
+    if not status and err then
+      log:error("Error in OnPropertyChanged for property '%s': %s", p, err)
+      --#ifdef DRIVERCENTRAL
+      diagnostics:captureError(tostring(err), nil, "MqttUniversal.OnPropertyChanged")
+      --#endif
     end
   end
   gInitialized = true
-  UpdateProperty("Driver Status", "Disconnected")
+  mqttDevice:refreshStatus()
 
   -- Re-register availability events/conditional
   local hasAvailabilityTopic = not IsEmpty(Properties["Availability Topic"])
-  MqttDevice:registerAvailabilityEvents(hasAvailabilityTopic)
+  mqttDevice:registerAvailabilityEvents(hasAvailabilityTopic)
 
-  -- Update property visibility
   updateAvailabilityPropertyVisibility()
   updateItemProperties()
 
-  -- Request current broker status
   SendToProxy(MQTT_BINDING, "GET_STATUS", {}, "NOTIFY")
 end
 
@@ -682,6 +695,14 @@ function OPC.Automatic_Updates(propertyValue)
 end
 --#endif
 
+function OPC.Driver_Status(propertyValue)
+  log:trace("OPC.Driver_Status('%s')", propertyValue)
+  if not gInitialized then
+    UpdateProperty("Driver Status", "Initializing", false)
+    return
+  end
+end
+
 function OPC.Driver_Version(propertyValue)
   log:trace("OPC.Driver_Version('%s')", propertyValue)
   C4:UpdateProperty("Driver Version", C4:GetDriverConfigInfo("version"))
@@ -692,6 +713,7 @@ function OPC.Log_Mode(propertyValue)
   log:setLogMode(propertyValue)
   CancelTimer("LogMode")
   if not log:isEnabled() then
+    UpdateProperty("Log Level", "3 - Info", true)
     return
   end
   log:warn("Log mode '%s' will expire in 3 hours", propertyValue)
@@ -699,6 +721,7 @@ function OPC.Log_Mode(propertyValue)
     log:warn("Setting log mode to 'Off' (timer expired)")
     UpdateProperty("Log Mode", "Off", true)
   end)
+  OnPropertyChanged("Log Level")
 end
 
 function OPC.Log_Level(propertyValue)
@@ -724,14 +747,15 @@ function OPC.Availability_Topic(propertyValue)
     return
   end
 
+  mqttDevice:clearAvailability()
   if IsEmpty(propertyValue) then
-    MqttDevice:unregisterAvailabilityEvents()
+    log:info("Availability Topic cleared; availability is no longer tracked")
   else
-    MqttDevice:registerAvailabilityEvents(true)
+    mqttDevice:registerAvailabilityEvents(true)
   end
 
   local deviceId = tostring(C4:GetDeviceID())
-  MqttDevice:subscribeToAvailability(propertyValue, deviceId)
+  mqttDevice:subscribeToAvailability(propertyValue, deviceId)
   updateAvailabilityPropertyVisibility()
 end
 
@@ -740,7 +764,7 @@ function OPC.Payload_Available(propertyValue)
   if not gInitialized then
     return
   end
-  MqttDevice:reevaluateAvailability({
+  mqttDevice:reevaluateAvailability({
     valuePath = Properties["Availability Value Path"],
     payloadAvailable = propertyValue,
     payloadNotAvailable = Properties["Payload Not Available"],
@@ -752,7 +776,7 @@ function OPC.Payload_Not_Available(propertyValue)
   if not gInitialized then
     return
   end
-  MqttDevice:reevaluateAvailability({
+  mqttDevice:reevaluateAvailability({
     valuePath = Properties["Availability Value Path"],
     payloadAvailable = Properties["Payload Available"],
     payloadNotAvailable = propertyValue,
@@ -764,7 +788,7 @@ function OPC.Availability_Value_Path(propertyValue)
   if not gInitialized then
     return
   end
-  MqttDevice:reevaluateAvailability({
+  mqttDevice:reevaluateAvailability({
     valuePath = propertyValue,
     payloadAvailable = Properties["Payload Available"],
     payloadNotAvailable = Properties["Payload Not Available"],
@@ -787,11 +811,11 @@ local function createAddItemHandler(itemType, propertyName)
       return
     end
 
-    local itemId = addItem(propertyValue, itemType)
+    local itemId, reason = addItem(propertyValue, itemType)
 
     if itemId == nil then
       -- Show error in property field, then clear after delay
-      UpdateProperty(propertyName, "Error: Item with name '" .. propertyValue .. "' already exists")
+      UpdateProperty(propertyName, "Error: " .. reason)
       delay(2 * ONE_SECOND):next(function()
         UpdateProperty(propertyName, "")
       end)
@@ -807,13 +831,11 @@ local function createAddItemHandler(itemType, propertyName)
   end
 end
 
--- Add device handlers
 OPC.Add_Relay = createAddItemHandler("RELAY", "Add Relay")
 OPC.Add_Contact = createAddItemHandler("CONTACT", "Add Contact")
 OPC.Add_Button = createAddItemHandler("BUTTON", "Add Button")
 OPC.Add_Event = createAddItemHandler("EVENT", "Add Event")
 
--- Add variable handlers
 OPC.Add_String_Variable = createAddItemHandler("STRING", "Add String Variable")
 OPC.Add_Bool_Variable = createAddItemHandler("BOOL", "Add Bool Variable")
 OPC.Add_Number_Variable = createAddItemHandler("NUMBER", "Add Number Variable")
@@ -821,7 +843,6 @@ OPC.Add_Float_Variable = createAddItemHandler("FLOAT", "Add Float Variable")
 OPC.Add_Temperature_Variable = createAddItemHandler("TEMPERATURE", "Add Temperature Variable")
 OPC.Add_Humidity_Variable = createAddItemHandler("HUMIDITY", "Add Humidity Variable")
 
--- Item management handlers
 function OPC.Remove_Item(propertyValue)
   log:trace("OPC.Remove_Item('%s')", propertyValue)
   if not gInitialized then
@@ -845,7 +866,7 @@ end
 
 --- Create an item config property handler.
 --- @param configKey string The config key to update.
---- @param opts table|nil Optional settings.
+--- @param opts? table { default?: any, transform?: fun(v: string): any, postUpdate?: fun(itemId: string) }
 --- @return function handler The property change handler.
 local function createConfigHandler(configKey, opts)
   opts = opts or {}
@@ -881,8 +902,16 @@ local function reevaluateState(itemId)
   updateItemConfigProperties()
 end
 
--- Item configuration handlers
-OPC.Temperature_Scale = createConfigHandler("temperatureScale", { default = "Celsius" })
+--- Tell a sensor item's bound devices its reading again, in the scale just set.
+--- @param itemId string Item ID.
+local function resendReading(itemId)
+  local entity = getEntity(itemId)
+  if entity and entity.sendValue then
+    entity:sendValue()
+  end
+end
+
+OPC.Temperature_Scale = createConfigHandler("temperatureScale", { default = "Celsius", postUpdate = resendReading })
 OPC.Value_Path = createConfigHandler("valuePath", { default = "", postUpdate = reevaluateState })
 OPC.State_On = createConfigHandler("stateOn", { default = "", postUpdate = reevaluateState })
 OPC.State_Off = createConfigHandler("stateOff", { default = "", postUpdate = reevaluateState })
@@ -912,7 +941,7 @@ function RFP.BROKER_CONNECTED(idBinding, strCommand, tParams, args)
     return
   end
 
-  MqttDevice:setConnected(true)
+  mqttDevice:setConnected(true)
   subscribeAllEntities()
 end
 
@@ -922,7 +951,7 @@ function RFP.BROKER_DISCONNECTED(idBinding, strCommand, tParams, args)
     return
   end
 
-  MqttDevice:setConnected(false)
+  mqttDevice:setConnected(false)
 end
 
 -----------------------------------------------------------------------
@@ -931,11 +960,11 @@ end
 
 OBC[MQTT_BINDING] = function(idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
   log:trace("OBC[MQTT_BINDING](%s, %s, %s, %s, %s)", idBinding, strClass, bIsBound, otherDeviceId, otherBindingId)
-  MqttDevice:reset()
+  mqttDevice:reset()
   for _, entity in pairs(entities) do
     entity:reset()
   end
-  UpdateProperty("Driver Status", "Disconnected")
+  mqttDevice:refreshStatus()
   if bIsBound then
     SendToProxy(MQTT_BINDING, "GET_STATUS", {}, "NOTIFY")
   end
@@ -981,7 +1010,7 @@ function EC.MQTT_MESSAGE(tParams)
   -- Check global availability topic
   local availabilityTopic = Properties["Availability Topic"]
   if not IsEmpty(availabilityTopic) and topic == availabilityTopic then
-    MqttDevice:updateAvailability(payload, {
+    mqttDevice:updateAvailability(payload, {
       valuePath = Properties["Availability Value Path"],
       payloadAvailable = Properties["Payload Available"],
       payloadNotAvailable = Properties["Payload Not Available"],
@@ -1004,7 +1033,10 @@ function EC.MQTT_MESSAGE(tParams)
   end
 end
 
-function getItemParamNames(itemType)
+--- The items of a type as command parameters list them, "Name [ID]", sorted.
+--- @param itemType string|nil The item type, or nil for every item.
+--- @return string[] names The parameter names.
+local function getItemParamNames(itemType)
   log:trace("getItemParamNames(%s)", itemType)
   local names = {}
   for _, item in pairs(getItems()) do
@@ -1016,7 +1048,11 @@ function getItemParamNames(itemType)
   return names
 end
 
-function getItemByParamName(paramName)
+--- Find an item by the "Name [ID]" a command parameter carries.
+--- @param paramName string The parameter value.
+--- @return table|nil item The item, or nil if none matches.
+--- @return MqttEntity|nil entity The item's entity, or nil.
+local function getItemByParamName(paramName)
   log:trace("getItemByParamName(%s)", paramName)
   for itemId, item in pairs(getItems()) do
     local itemParamName = item.name .. " [" .. item.id .. "]"

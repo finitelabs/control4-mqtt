@@ -3,6 +3,8 @@
 --- @class MqttSensor:MqttEntity
 --- @field _state number|nil Current sensor value.
 --- @field sensorType string The sensor type (TEMPERATURE or HUMIDITY).
+--- @field bindingClass string|nil The binding class consumers connect to: TEMPERATURE_VALUE or HUMIDITY_VALUE.
+--- @field c4VarType string|nil The type of the reading's variable.
 
 require("lib.utils")
 local log = require("lib.logging")
@@ -11,7 +13,7 @@ local values = require("lib.values")
 local MqttEntity = require("mqtt.entities.base")
 
 --- Sensor type configurations.
---- @type table<string, {bindingClass: string, scale: string, c4VarType: string}>
+--- @type table<string, {bindingClass: string, c4VarType: string}>
 local SENSOR_TYPES = {
   TEMPERATURE = {
     bindingClass = "TEMPERATURE_VALUE",
@@ -19,7 +21,6 @@ local SENSOR_TYPES = {
   },
   HUMIDITY = {
     bindingClass = "HUMIDITY_VALUE",
-    scale = "PERCENT",
     c4VarType = "FLOAT",
   },
 }
@@ -29,17 +30,14 @@ local MqttSensor = setmetatable({
   BINDING_TYPE = "CONTROL",
   BINDINGS_NAMESPACE = "MqttSensor",
 }, { __index = MqttEntity })
+MqttSensor.__index = MqttSensor
 
 --- Create a new sensor entity instance.
 --- @param item table The item configuration.
 --- @param brokerBinding number The broker binding ID.
---- @return MqttSensor
+--- @return MqttSensor instance A new sensor entity.
 function MqttSensor:new(item, brokerBinding)
   local instance = MqttEntity.new(self, item, brokerBinding)
-  setmetatable(instance, self)
-  self.__index = self
-
-  -- Store sensor type info
   local typeInfo = SENSOR_TYPES[item.itemType]
   if typeInfo then
     instance.sensorType = item.itemType
@@ -51,13 +49,13 @@ function MqttSensor:new(item, brokerBinding)
 end
 
 --- Get the binding key for this sensor.
---- @return string
+--- @return string key The binding key.
 function MqttSensor:getBindingKey()
   return "item_" .. self:getId()
 end
 
 --- Get the current sensor value.
---- @return number|nil
+--- @return number|nil value The last reading, or nil.
 function MqttSensor:getValue()
   return self._state
 end
@@ -69,11 +67,17 @@ function MqttSensor:getTemperatureScale()
   return scale == "Fahrenheit" and "FAHRENHEIT" or "CELSIUS"
 end
 
+--- The item's reading variable, created at its first reading.
+--- @return string[] names The variable names.
+function MqttSensor:getVariableNames()
+  return { self:getName() }
+end
+
 --- Process the extracted value and update the sensor.
 --- @param value string The extracted value.
---- @param rawPayload string The original raw payload.
+--- @param _rawPayload string The original raw payload.
 --- @return boolean changed Whether the value changed.
-function MqttSensor:_processValue(value, rawPayload)
+function MqttSensor:_processValue(value, _rawPayload)
   local numValue = tofinite(value)
   if numValue == nil then
     log:warn("Invalid sensor value for '%s': %s", self:getName(), value)
@@ -82,22 +86,20 @@ function MqttSensor:_processValue(value, rawPayload)
 
   local changed = self._state ~= numValue
   self._state = numValue
-
-  -- Update C4 variable
   values:update(self:getName(), value, self.c4VarType or "FLOAT")
-
-  -- Send to binding
-  self:sendValue(numValue)
-
-  if changed then
-    log:info("Sensor '%s' value: %s", self:getName(), numValue)
+  if not changed then
+    return false
   end
 
-  return changed
+  -- The first reading after a start or a broker rebind goes out even when unchanged: a bound
+  -- thermostat comes back from a controller restart with no reading.
+  self:sendValue(numValue)
+  log:info("Sensor '%s' value: %s", self:getName(), numValue)
+  return true
 end
 
 --- Send the sensor value to bound consumers.
---- @param value number|nil The value to send (uses cached value if nil).
+--- @param value? number The value to send (uses cached value if nil).
 function MqttSensor:sendValue(value)
   value = value or self._state
   if value == nil then
@@ -118,14 +120,14 @@ function MqttSensor:sendValue(value)
     log:debug("Sending humidity value: %s to binding %s", value, binding.bindingId)
   end
 
-  SendToProxy(binding.bindingId, "VALUE_CHANGED", SensorValueParams(value, scale))
+  SendToProxy(binding.bindingId, "VALUE_CHANGED", SensorValueParams(value, scale), "NOTIFY")
 end
 
 --- Register the sensor binding and handlers.
 --- @return table|nil binding The created binding or nil on failure.
 function MqttSensor:registerBinding()
   if not self.bindingClass then
-    log:warn("Cannot register binding for sensor '%s' - unknown type", self:getName())
+    log:warn("Cannot register binding for sensor '%s'; unknown type", self:getName())
     return nil
   end
 
@@ -145,7 +147,6 @@ function MqttSensor:registerBinding()
 
   log:info("Registered %s binding for '%s' (bindingId=%s)", self.bindingClass, self:getName(), binding.bindingId)
 
-  -- Register RFP handler for value requests
   local entity = self
   RFP[binding.bindingId] = function(idBinding, strCommand, tParams, _args)
     log:debug("RFP[%s] strCommand=%s tParams=%s", idBinding, strCommand, tParams)
@@ -156,7 +157,6 @@ function MqttSensor:registerBinding()
     end
   end
 
-  -- Register OBC handler for binding changes
   OBC[binding.bindingId] = function(idBinding, _strClass, bIsBound, otherDeviceId, _otherBindingId)
     log:debug("OBC[%s] bIsBound=%s otherDeviceId=%s", idBinding, bIsBound, otherDeviceId)
     if bIsBound then
@@ -171,13 +171,6 @@ end
 function MqttSensor:unregisterBinding()
   bindings:deleteBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
   log:debug("Unregistered binding for sensor '%s'", self:getName())
-end
-
---- Check if this is a supported sensor type.
---- @param itemType string The item type to check.
---- @return boolean
-function MqttSensor.isSensorType(itemType)
-  return SENSOR_TYPES[itemType] ~= nil
 end
 
 return MqttSensor

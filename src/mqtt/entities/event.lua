@@ -18,38 +18,36 @@ local MqttEvent = setmetatable({
   BINDINGS_NAMESPACE = "MqttEvent",
   EVENTS_NAMESPACE = "MqttEvent",
 }, { __index = MqttEntity })
+MqttEvent.__index = MqttEvent
 
 --- Create a new event entity instance.
 --- @param item table The item configuration.
 --- @param brokerBinding number The broker binding ID.
---- @return MqttEvent
+--- @return MqttEvent instance A new event entity.
 function MqttEvent:new(item, brokerBinding)
-  local instance = MqttEntity.new(self, item, brokerBinding)
-  setmetatable(instance, self)
-  self.__index = self
-  return instance
+  return MqttEntity.new(self, item, brokerBinding)
 end
 
 --- Get the binding key for this event.
---- @return string
+--- @return string key The binding key.
 function MqttEvent:getBindingKey()
   return "event_" .. self:getId()
 end
 
 --- Get the event key for this event.
---- @return string
+--- @return string key The event key.
 function MqttEvent:getEventKey()
   return "event_" .. self:getId()
 end
 
 --- Get the event name for display.
---- @return string
+--- @return string name The event's name.
 function MqttEvent:getEventName()
   return self:getName() .. " Triggered"
 end
 
 --- Get the event type filter (comma-separated list of accepted event types).
---- @return string|nil
+--- @return string|nil filter The filter, or nil.
 function MqttEvent:getEventTypeFilter()
   return self.item.eventTypeFilter
 end
@@ -75,23 +73,34 @@ function MqttEvent:passesFilter(eventType)
 end
 
 --- Get the current state (last event type).
---- @return string|nil
+--- @return string|nil eventType The last event type, or nil.
 function MqttEvent:getState()
   return self._state
 end
 
 --- Get state as display text.
---- @return string
+--- @return string text The last event type, or empty.
 function MqttEvent:getStateText()
   return self._state or ""
 end
 
+--- The item's state variable.
+--- @return string[] names The variable names.
+function MqttEvent:getVariableNames()
+  return { self:getStateVarName() }
+end
+
+--- Create the state variable, empty, unless it exists.
+function MqttEvent:seedVariables()
+  self:_seedVariable(self:getStateVarName(), "STRING")
+end
+
 --- Process the extracted value and trigger event/binding.
 --- @param value string The extracted value (event type).
---- @param rawPayload string The original raw payload.
+--- @param _rawPayload string The original raw payload.
 --- @param retained boolean|nil Whether this is a stored message rather than one just published.
 --- @return boolean changed Whether the state changed.
-function MqttEvent:_processValue(value, rawPayload, retained)
+function MqttEvent:_processValue(value, _rawPayload, retained)
   local eventType = tostring(value)
 
   if retained then
@@ -99,19 +108,13 @@ function MqttEvent:_processValue(value, rawPayload, retained)
     return false
   end
 
-  -- Check filter
   if not self:passesFilter(eventType) then
     log:debug("Event '%s' - filtered out event type: %s", self:getName(), eventType)
     return false
   end
 
-  -- Update state
   self._state = eventType
-
-  -- Update C4 variable for programming
   values:update(self:getStateVarName(), eventType, "STRING")
-
-  -- Fire Control4 event
   events:fire(self.EVENTS_NAMESPACE, self:getEventKey())
   log:info("Event '%s' triggered: %s", self:getName(), eventType)
 
@@ -157,7 +160,6 @@ function MqttEvent:registerBinding()
 
   log:info("Registered BUTTON_LINK binding (consumer) for '%s' (bindingId=%s)", self:getName(), binding.bindingId)
 
-  -- Register Control4 event
   local eventName = self:getEventName()
   local eventDescription = "When NAME MQTT event '" .. self:getName() .. "' receives a matching message"
   events:getOrAddEvent(self.EVENTS_NAMESPACE, self:getEventKey(), eventName, eventDescription)
@@ -168,11 +170,9 @@ end
 
 --- Unregister the event binding and Control4 event.
 function MqttEvent:unregisterBinding()
-  -- Delete binding
   bindings:deleteBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
   log:debug("Unregistered BUTTON_LINK binding for event '%s'", self:getName())
 
-  -- Delete Control4 event
   events:deleteEvent(self.EVENTS_NAMESPACE, self:getEventKey())
   log:debug("Unregistered event for '%s'", self:getName())
 end

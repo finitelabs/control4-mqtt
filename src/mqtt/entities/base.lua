@@ -10,76 +10,72 @@
 --- @field _previousTopic string|nil Previous topic for subscription tracking.
 --- @field _state any Cached parsed state (type varies by entity).
 
+local JSON = require("JSON")
 local log = require("lib.logging")
-local stateParser = require("mqtt.state_parser")
+local values = require("lib.values")
+local StateParser = require("mqtt.state_parser")
 
 local MqttEntity = {
   TYPE = "base",
 }
+MqttEntity.__index = MqttEntity
 
 --- Create a new entity instance.
 --- @param item table The item configuration.
 --- @param brokerBinding number The broker binding ID.
---- @return MqttEntity
+--- @return MqttEntity instance A new entity.
 function MqttEntity:new(item, brokerBinding)
-  local instance = {
-    item = item,
-    brokerBinding = brokerBinding,
-    _topicValue = nil,
-    _valuePathResult = nil,
-    _previousTopic = nil,
-    _state = nil,
-  }
-  setmetatable(instance, self)
-  self.__index = self
+  local instance = setmetatable({}, self)
+  instance.item = item
+  instance.brokerBinding = brokerBinding
   return instance
 end
 
 --- Get the entity's item ID.
---- @return string
+--- @return string id The item ID.
 function MqttEntity:getId()
   return tostring(self.item.id)
 end
 
 --- Get the entity's name.
---- @return string
+--- @return string name The item name.
 function MqttEntity:getName()
   return self.item.name
 end
 
 --- Get the entity's state variable name.
---- @return string
+--- @return string name The state variable's name.
 function MqttEntity:getStateVarName()
   return self:getName() .. " State"
 end
 
 --- Get the cached raw topic value (payload).
---- @return string|nil
+--- @return string|nil payload The last payload, or nil.
 function MqttEntity:getTopicValue()
   return self._topicValue
 end
 
 --- Get the cached JSONPath extraction result.
---- @return string|nil
+--- @return string|nil result The last extraction result, or nil.
 function MqttEntity:getValuePathResult()
   return self._valuePathResult
 end
 
 --- Get the cached parsed state.
---- @return any
+--- @return any state The parsed state.
 function MqttEntity:getState()
   return self._state
 end
 
 --- Get the previous topic (for subscription change detection).
---- @return string|nil
+--- @return string|nil topic The previous topic, or nil.
 function MqttEntity:getPreviousTopic()
   return self._previousTopic
 end
 
 --- Check if the state topic has changed.
 --- @param newTopic string|nil The new topic to compare.
---- @return boolean
+--- @return boolean changed True if a previous topic differs from the new one.
 function MqttEntity:hasTopicChanged(newTopic)
   return self._previousTopic ~= nil and self._previousTopic ~= newTopic
 end
@@ -96,13 +92,10 @@ end
 --- @return string|nil resultMessage The extraction result message for display.
 function MqttEntity:extractValue(payload)
   local jsonPath = self.item.valuePath
-
-  -- No path configured, use raw payload
-  if not jsonPath or jsonPath == "" then
+  if IsEmpty(jsonPath) then
     return payload, nil
   end
 
-  -- Try to parse as JSON
   local success, jsonTable = pcall(JSON.decode, JSON, payload)
   if not success or type(jsonTable) ~= "table" then
     local errMsg = "Error: Invalid JSON"
@@ -110,7 +103,7 @@ function MqttEntity:extractValue(payload)
     return nil, errMsg
   end
 
-  local value = stateParser.extractJsonPath(jsonTable, jsonPath)
+  local value = StateParser.extractJsonPath(jsonTable, jsonPath)
   if value == nil then
     local errMsg = "Error: Path not found"
     log:warn("JSONPath '%s' not found in payload", jsonPath)
@@ -128,7 +121,6 @@ function MqttEntity:subscribe(deviceId)
     return
   end
 
-  -- Unsubscribe from previous topic if changed
   if self:hasTopicChanged(self.item.stateTopic) then
     log:debug("Unsubscribing from previous topic: %s", self._previousTopic)
     SendToProxy(self.brokerBinding, "UNSUBSCRIBE", {
@@ -164,8 +156,8 @@ end
 --- Publish a message to MQTT.
 --- @param topic string The topic to publish to.
 --- @param payload string The payload to publish.
---- @param qos string|nil QoS level (default "0").
---- @param retain boolean|nil Whether to retain the message.
+--- @param qos? string QoS level (default "0").
+--- @param retain? boolean Whether to retain the message.
 function MqttEntity:publish(topic, payload, qos, retain)
   log:debug("Publishing to %s: %s", topic, payload)
   SendToProxy(self.brokerBinding, "PUBLISH", {
@@ -184,7 +176,6 @@ function MqttEntity:onMessage(payload, retained)
   log:trace("%s:onMessage(%s, %s)", self.TYPE, payload, retained)
   self._topicValue = payload
 
-  -- Extract value using JSONPath if configured
   local extractedValue, pathResult = self:extractValue(payload)
   self._valuePathResult = pathResult
 
@@ -193,18 +184,43 @@ function MqttEntity:onMessage(payload, retained)
     return false
   end
 
-  -- Subclasses override to handle the extracted value
   return self:_processValue(extractedValue, payload, retained)
 end
 
 --- Process the extracted value. Override in subclass.
---- @param value string The extracted value.
---- @param rawPayload string The original raw payload.
---- @param retained boolean|nil Whether this is a stored message rather than one just published.
+--- @param _value string The extracted value.
+--- @param _rawPayload string The original raw payload.
+--- @param _retained boolean|nil Whether this is a stored message rather than one just published.
 --- @return boolean changed Whether the state changed.
-function MqttEntity:_processValue(value, rawPayload, retained)
-  -- Base implementation does nothing
+function MqttEntity:_processValue(_value, _rawPayload, _retained)
   return false
+end
+
+--- The names of the variables the item owns. None by default.
+--- @return string[] names The variable names.
+function MqttEntity:getVariableNames()
+  return {}
+end
+
+--- Create the item's variables that don't exist yet, so programming can use them before the first message.
+--- Override in subclass.
+function MqttEntity:seedVariables() end
+
+--- Delete the item's variables.
+function MqttEntity:deleteVariables()
+  for _, name in ipairs(self:getVariableNames()) do
+    values:delete(name)
+  end
+end
+
+--- Create a read-only variable, empty, unless it exists.
+--- @param name string The variable name.
+--- @param varType string The variable type.
+function MqttEntity:_seedVariable(name, varType)
+  local stored = values:getValue(name)
+  if stored == nil or stored.deleted then
+    values:update(name, "", varType)
+  end
 end
 
 --- Reset the entity's cached state.
@@ -220,7 +236,7 @@ end
 --- @param bindingId number The binding the devices are bound to.
 --- @param variableId number The variable to read on each bound device.
 --- @param value string The value a device would show if it agrees.
---- @return boolean differs
+--- @return boolean differs True if the bound devices show the other value.
 function MqttEntity:_boundDeviceShowsOther(bindingId, variableId, value)
   local other, same = false, false
   for deviceId in pairs(C4:GetBoundConsumerDevices(C4:GetDeviceID(), bindingId) or {}) do

@@ -125,7 +125,13 @@ Broker or MQTT Universal item changes it on all of them.
 
 ##### Driver Status (read-only)
 
-Displays the current status of the driver.
+Displays the state of the driver's link to the broker and of the device:
+
+- `Connected` while the MQTT Broker is connected to the broker.
+- `Disconnected` while it is not, or while the driver is not bound to an MQTT
+  Broker.
+- `Device unavailable` while the broker is connected and
+  [Availability Status](#availability-status-read-only) reads `Unavailable`.
 
 ##### Driver Version (read-only)
 
@@ -133,7 +139,8 @@ Displays the current version of the driver.
 
 ##### Log Level \[ 0 - Fatal | 1 - Error | 2 - Warning | **_3 - Info_** | 4 - Debug | 5 - Trace | 6 - Ultra \]
 
-Sets the logging level. Default is `3 - Info`.
+Sets the logging level. Default is `3 - Info`. It returns to `3 - Info` when
+[Log Mode](#log-mode--off--print--log--print-and-log-) turns off.
 
 ##### Log Mode \[ **_Off_** | Print | Log | Print and Log \]
 
@@ -172,13 +179,14 @@ These settings track one availability topic for the whole driver.
 
 Sets the topic the driver subscribes to for the device's availability. Leave it
 empty if the device has no availability topic. Setting it adds the Device
-Available and Device Unavailable events and the availability conditional. Set
-[Payload Available](#payload-available),
+Available and Device Unavailable events, the availability conditional and the
+Availability Status variable. Set [Payload Available](#payload-available),
 [Payload Not Available](#payload-not-available) or both to say which payloads
 mean what.
 
-> ⚠️ Clearing it removes the Device Available and Device Unavailable events and
-> the availability conditional, along with the programming on those events.
+Changing or clearing it blanks Availability Topic Value, Availability Value Path
+Result and Availability Status until a payload arrives on the new topic.
+Clearing it keeps the events, the conditional and the programming on them.
 
 ##### Availability Topic Value (read-only)
 
@@ -218,6 +226,14 @@ payload means available.
 
 #### Add Devices
 
+Each Add property takes the name of a new item. The item is not added, and the
+property shows an error for 2 seconds, when another item has the same name
+(`Error: Item with name '<name>' already exists`) or a variable the item would
+own is in use (`Error: Variable '<variable>' is already in use`). A variable is
+in use when another item owns it, when it is Availability Status, or when a
+property has its name. A run of spaces in a variable name counts as one
+underscore.
+
 ##### Add Relay
 
 Enter a name to create a new relay. This creates a `RELAY` binding that can be
@@ -240,6 +256,8 @@ Enter a name to create a new event. Events subscribe to MQTT topics and trigger
 connected Control4 buttons/keypads when messages arrive.
 
 #### Add Variables
+
+These work as the [Add Devices](#add-devices) properties do.
 
 ##### Add String Variable
 
@@ -277,8 +295,7 @@ entry in their lists reads `Name (TYPE) [ID]`.
 > ⚠️ Removing an item also removes its connection and the bindings made to it.
 > Removing an event item also removes its event and the programming on it.
 
-Selects an item to remove. The variables of a relay, contact, event, string,
-bool, number or float item are removed with it.
+Selects an item to remove. The item's variables are removed with it.
 
 ##### Configure Item \[ **_(Select)_** | *added items...* \]
 
@@ -419,13 +436,13 @@ driver in the project.
 Adding a relay, contact, button, temperature variable or humidity variable adds
 a connection named for the item:
 
-| Item                 | Binding Class       | Purpose                                                 |
-| -------------------- | ------------------- | ------------------------------------------------------- |
-| Relay                | `RELAY`             | Takes on and off commands and reports the relay's state |
-| Contact              | `CONTACT_SENSOR`    | Reports whether the contact is open or closed           |
-| Button               | `BUTTON_LINK`       | Lets a bound device press the button                    |
-| Temperature variable | `TEMPERATURE_VALUE` | Reports the temperature in the item's Temperature Scale |
-| Humidity variable    | `HUMIDITY_VALUE`    | Reports the humidity                                    |
+| Item                 | Binding Class       | Purpose                                                                   |
+| -------------------- | ------------------- | ------------------------------------------------------------------------- |
+| Relay                | `RELAY`             | Takes on and off commands and reports the relay's state                   |
+| Contact              | `CONTACT_SENSOR`    | Reports whether the contact is open or closed                             |
+| Button               | `BUTTON_LINK`       | Lets a bound device press the button                                      |
+| Temperature variable | `TEMPERATURE_VALUE` | Reports the temperature, in the item's Temperature Scale, when it changes |
+| Humidity variable    | `HUMIDITY_VALUE`    | Reports the humidity when it changes                                      |
 
 ### {name} (consumer, dynamic)
 
@@ -442,17 +459,17 @@ button.
 
 ## Events
 
-| Event              | Description                                                                                                                       |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| Device Available   | Fires when the device changes from unavailable to available. Present only while [Availability Topic](#availability-topic) is set. |
-| Device Unavailable | Fires when the device changes from available to unavailable. Present only while Availability Topic is set.                        |
-| `{name} Triggered` | Fires when an event item receives a new message that passes its [Event Type Filter](#event-type-filter).                          |
+| Event              | Description                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Device Available   | Fires when the device changes from unavailable to available, including a change made while the controller was down. Added when [Availability Topic](#availability-topic) is set, and kept when it is cleared. |
+| Device Unavailable | Fires when the device changes from available to unavailable, including a change made while the controller was down. Added and kept with Device Available.                                                     |
+| `{name} Triggered` | Fires when an event item receives a new message that passes its [Event Type Filter](#event-type-filter).                                                                                                      |
 
 ## Conditionals
 
-| Conditional                | Description                                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Device availability status | Tests whether the device is `Available` or `Unavailable`. Present only while Availability Topic is set. |
+| Conditional                | Description                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Device availability status | Tests whether the device is `Available` or `Unavailable`. Added and kept with the availability events. |
 
 ## Commands
 
@@ -462,15 +479,17 @@ button.
 
 ## Variables
 
-| Variable            | Type                          | Description                                                                                                                           |
-| ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `{name}`            | STRING, BOOL, NUMBER or FLOAT | A string, bool, number or float item's value from its State Topic. Writable: setting it publishes the new value to its Command Topic. |
-| `{name}`            | FLOAT                         | A temperature or humidity item's last reading. Read-only.                                                                             |
-| `{name} State`      | STRING                        | A relay's `On` or `Off`, a contact's `Open` or `Closed`, or an event's last event type. Read-only.                                    |
-| Availability Status | STRING                        | `Available` or `Unavailable`. Read-only.                                                                                              |
+| Variable            | Type                          | Description                                                                                                                                                                              |
+| ------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{name}`            | STRING, BOOL, NUMBER or FLOAT | A string, bool, number or float item's value from its State Topic. Writable: setting it publishes the new value to its Command Topic, and the next value on its State Topic replaces it. |
+| `{name}`            | FLOAT                         | A temperature or humidity item's last reading. Read-only.                                                                                                                                |
+| `{name} State`      | STRING                        | A relay's `On` or `Off`, a contact's `Open` or `Closed`, or an event's last event type. Read-only.                                                                                       |
+| Availability Status | STRING                        | `Available` or `Unavailable`, or empty until a payload on the Availability Topic matches. Read-only.                                                                                     |
 
-> **Note:** `{name}` is the item's name. The read-only variables appear once
-> their first value arrives.
+> **Note:** `{name}` is the item's name. A temperature or humidity item's
+> variable appears with its first reading. A State variable appears, empty, as
+> soon as its item is added, and Availability Status as soon as an Availability
+> Topic is set.
 
 <!-- #ifdef DRIVERCENTRAL -->
 
