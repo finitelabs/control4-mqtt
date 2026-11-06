@@ -92,6 +92,9 @@ T.truthy("a Keep Alive change prints its value", printedFor("Keep Alive", "45"):
 T.section("but never the Password")
 --------------------------------------------------------------------------------
 
-T.truthy("a Password change prints no part of the password", printedFor("Password", SECRET):find(SECRET, 1, true) == nil)
+T.truthy(
+  "a Password change prints no part of the password",
+  printedFor("Password", SECRET):find(SECRET, 1, true) == nil
+)
 
 T.finish()
