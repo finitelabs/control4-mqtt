@@ -215,4 +215,25 @@ function MqttEntity:reset()
   self._state = nil
 end
 
+--- Whether the devices bound to `bindingId` show something other than `value` in their variable `variableId`:
+--- at least one does and none shows `value`. A device with nothing readable there doesn't count.
+--- @param bindingId number The binding the devices are bound to.
+--- @param variableId number The variable to read on each bound device.
+--- @param value string The value a device would show if it agrees.
+--- @return boolean differs
+function MqttEntity:_boundDeviceShowsOther(bindingId, variableId, value)
+  local other, same = false, false
+  for deviceId in pairs(C4:GetBoundConsumerDevices(C4:GetDeviceID(), bindingId) or {}) do
+    local shown = C4:GetVariable(deviceId, variableId)
+    if shown ~= nil and shown ~= "" then
+      if tostring(shown) == value then
+        same = true
+      else
+        other = true
+      end
+    end
+  end
+  return other and not same
+end
+
 return MqttEntity

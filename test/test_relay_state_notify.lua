@@ -8,8 +8,9 @@
 --
 -- A RELAY provider has two ways to report state. CLOSED/OPENED fire the bound
 -- relay driver's programming events, so they belong to a real change only.
--- STATE_CLOSED/STATE_OPENED set the same state silently, and are what a bind,
--- a GET_STATE and the first state heard from MQTT get: none is a change.
+-- STATE_CLOSED/STATE_OPENED set the same state silently, and are what a bind
+-- and a GET_STATE get, and the first state heard from MQTT unless the bound
+-- relay driver shows the other state.
 
 local T = require("testlib")
 
@@ -165,7 +166,7 @@ do
 end
 
 --------------------------------------------------------------------------------
-T.section("the first state heard after a restart is reported silently")
+T.section("with nothing readable on the bound driver, the first state heard is silent")
 --------------------------------------------------------------------------------
 
 -- At controller start the entity is rebuilt with no state and Director binds it
@@ -308,5 +309,48 @@ do
   command(id, "OFF")
   T.eq("custom payloads are published", published(), { "1", "0" })
 end
+
+--------------------------------------------------------------------------------
+T.section("the first state is checked against the bound relay driver")
+--------------------------------------------------------------------------------
+
+--- Bind to a relay driver showing `shown` in its RelayState ("1" closed, "0" open), or nothing readable.
+local function bindShowing(bindingId, shown)
+  C4:Unbind(900, 1)
+  C4:Bind(C4:GetDeviceID(), bindingId, 900, 1, "RELAY")
+  ShimSetDevices({ [900] = { variables = shown and { ["1000"] = { name = "RelayState", value = shown } } or {} } })
+  bind(bindingId)
+end
+
+do
+  local relay, id = newRelay()
+  bindShowing(id, "1")
+  relay:onMessage("ON")
+  T.eq("a first state the relay already shows is silent", relayCommands(id), { "STATE_CLOSED" })
+end
+
+do
+  local relay, id = newRelay()
+  bindShowing(id, "1")
+  relay:onMessage("OFF", true)
+  T.eq("a first state the relay doesn't show is a change: OPENED", relayCommands(id), { "OPENED" })
+end
+
+do
+  local relay, id = newRelay()
+  bindShowing(id, "0")
+  relay:onMessage("ON")
+  T.eq("and the other way round: CLOSED", relayCommands(id), { "CLOSED" })
+end
+
+do
+  local relay, id = newRelay()
+  bindShowing(id, nil)
+  relay:onMessage("ON")
+  T.eq("a relay driver with nothing readable gets it silently", relayCommands(id), { "STATE_CLOSED" })
+end
+
+ShimResetDevices()
+C4:Unbind(900, 1)
 
 T.finish()

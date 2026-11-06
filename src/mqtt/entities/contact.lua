@@ -9,6 +9,9 @@ local values = require("lib.values")
 local stateParser = require("mqtt.state_parser")
 local MqttEntity = require("mqtt.entities.base")
 
+--- The bound contact driver's ContactState variable: "0" open, "1" closed.
+local CONTACT_STATE_VARIABLE = 1000
+
 local MqttContact = setmetatable({
   TYPE = "CONTACT",
   BINDING_CLASS = "CONTACT_SENSOR",
@@ -72,8 +75,8 @@ function MqttContact:_processValue(value, rawPayload)
 end
 
 --- Update the contact state and notify binding.
---- The first state heard since start or a broker rebind is what the contact
---- already was, so it is sent silently.
+--- The first state heard since start or a broker rebind is sent silently, unless
+--- the bound contact shows the other state.
 --- @param isOpen boolean The new state (true = open).
 --- @param payload string|nil The raw payload (for display).
 --- @return boolean changed Whether the state changed.
@@ -94,7 +97,7 @@ function MqttContact:_updateState(isOpen, payload)
   -- Notify binding
   local binding = bindings:getDynamicBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
   if binding then
-    if eventful then
+    if eventful or self:_boundDeviceShowsOther(binding.bindingId, CONTACT_STATE_VARIABLE, isOpen and "0" or "1") then
       local bindingState = isOpen and "OPENED" or "CLOSED"
       log:debug("Sending contact state %s to binding %s", bindingState, binding.bindingId)
       SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")

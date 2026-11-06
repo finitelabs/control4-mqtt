@@ -8,8 +8,8 @@
 --
 -- A CONTACT_SENSOR provider has two ways to report state. OPENED/CLOSED fire the bound contact driver's
 -- programming events, even when its state is unchanged, so they belong to a real change only.
--- STATE_OPENED/STATE_CLOSED set the same state silently, and are what a bind and the first state heard from MQTT
--- get: neither is a change.
+-- STATE_OPENED/STATE_CLOSED set the same state silently, and are what a bind gets, and the first state heard from
+-- MQTT unless the bound contact driver shows the other state.
 
 local T = require("testlib")
 
@@ -84,7 +84,7 @@ do
 end
 
 --------------------------------------------------------------------------------
-T.section("the first state heard is what the contact already was")
+T.section("with nothing readable on the bound driver, the first state heard is silent")
 --------------------------------------------------------------------------------
 
 do
@@ -108,7 +108,7 @@ do
   sent = {}
   contact:reset()
   contact:onMessage("closed")
-  T.eq("the first state after a broker rebind is silent too", contactCommands(id), { "STATE_CLOSED" })
+  T.eq("so is the first state after a broker rebind", contactCommands(id), { "STATE_CLOSED" })
 end
 
 --------------------------------------------------------------------------------
@@ -135,5 +135,88 @@ do
   contact:onMessage("open")
   T.eq("the same state again sends nothing", contactCommands(id), {})
 end
+
+--------------------------------------------------------------------------------
+T.section("the first state is checked against the bound contact driver")
+--------------------------------------------------------------------------------
+
+--- Bind to a contact driver showing `shown` in its ContactState ("0" open, "1" closed), or nothing readable.
+local function bindShowing(bindingId, shown)
+  C4:Unbind(900, 1)
+  C4:Bind(C4:GetDeviceID(), bindingId, 900, 1, "CONTACT_SENSOR")
+  ShimSetDevices({ [900] = { variables = shown and { ["1000"] = { name = "ContactState", value = shown } } or {} } })
+  bind(bindingId)
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, "1")
+  contact:onMessage("closed")
+  T.eq("a first state the contact already shows is silent", contactCommands(id), { "STATE_CLOSED" })
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, "1")
+  contact:onMessage("open", true)
+  T.eq("a first state the contact doesn't show is a change: OPENED", contactCommands(id), { "OPENED" })
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, "0")
+  contact:onMessage("closed")
+  T.eq("and the other way round: CLOSED", contactCommands(id), { "CLOSED" })
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, nil)
+  contact:onMessage("open")
+  T.eq("a contact driver with nothing readable gets it silently", contactCommands(id), { "STATE_OPENED" })
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, "1")
+  sent = {}
+  contact:onMessage("closed")
+  sent = {}
+  contact:onMessage("open")
+  T.eq("after the first state, a change is OPENED as before", contactCommands(id), { "OPENED" })
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, "0")
+  contact:onMessage("open")
+  sent = {}
+  contact:reset()
+  contact:onMessage("closed")
+  T.eq(
+    "after a broker rebind, a first state the contact doesn't show is a change too",
+    contactCommands(id),
+    { "CLOSED" }
+  )
+end
+
+do
+  local contact, id = newContact()
+  C4:Unbind(900, 1)
+  C4:Unbind(901, 1)
+  C4:Bind(C4:GetDeviceID(), id, 900, 1, "CONTACT_SENSOR")
+  C4:Bind(C4:GetDeviceID(), id, 901, 1, "CONTACT_SENSOR")
+  ShimSetDevices({
+    [900] = { variables = { ["1000"] = { name = "ContactState", value = "1" } } },
+    [901] = { variables = { ["1000"] = { name = "ContactState", value = "0" } } },
+  })
+  bind(id)
+  contact:onMessage("open")
+  T.eq("two contact drivers that disagree get the first state silently", contactCommands(id), { "STATE_OPENED" })
+  C4:Unbind(901, 1)
+end
+
+ShimResetDevices()
+C4:Unbind(900, 1)
 
 T.finish()
