@@ -16,6 +16,7 @@ local diagnostics = require("lib.diagnostics")
 --#endif
 --#ifndef DRIVERCENTRAL
 local githubUpdater = require("lib.github-updater")
+local driverFilenames = require("lib.driver-filenames")
 --#endif
 
 -- MQTT client instance
@@ -565,7 +566,7 @@ function UpdateDrivers(forceUpdate)
   githubUpdater
     :updateAll(
       DRIVER_GITHUB_REPO,
-      require("lib.driver-filenames"),
+      driverFilenames,
       Properties["Update Channel"] == "Prerelease",
       forceUpdate
     )
