@@ -8,8 +8,8 @@
 --
 -- A CONTACT_SENSOR provider has two ways to report state. OPENED/CLOSED fire the bound contact driver's
 -- programming events, even when its state is unchanged, so they belong to a real change only.
--- STATE_OPENED/STATE_CLOSED set the same state silently, and are what a bind and the first state heard from MQTT
--- get: neither is a change.
+-- STATE_OPENED/STATE_CLOSED set the same state silently, and are what a bind gets, and the first state heard from
+-- MQTT unless the bound contact driver shows the other state.
 
 local T = require("testlib")
 
@@ -84,7 +84,7 @@ do
 end
 
 --------------------------------------------------------------------------------
-T.section("the first state heard is what the contact already was")
+T.section("with nothing readable on the bound driver, the first state heard is silent")
 --------------------------------------------------------------------------------
 
 do
@@ -108,7 +108,7 @@ do
   sent = {}
   contact:reset()
   contact:onMessage("closed")
-  T.eq("the first state after a broker rebind is silent too", contactCommands(id), { "STATE_CLOSED" })
+  T.eq("so is the first state after a broker rebind", contactCommands(id), { "STATE_CLOSED" })
 end
 
 --------------------------------------------------------------------------------

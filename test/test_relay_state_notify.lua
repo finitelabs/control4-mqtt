@@ -8,8 +8,9 @@
 --
 -- A RELAY provider has two ways to report state. CLOSED/OPENED fire the bound
 -- relay driver's programming events, so they belong to a real change only.
--- STATE_CLOSED/STATE_OPENED set the same state silently, and are what a bind,
--- a GET_STATE and the first state heard from MQTT get: none is a change.
+-- STATE_CLOSED/STATE_OPENED set the same state silently, and are what a bind
+-- and a GET_STATE get, and the first state heard from MQTT unless the bound
+-- relay driver shows the other state.
 
 local T = require("testlib")
 
@@ -165,7 +166,7 @@ do
 end
 
 --------------------------------------------------------------------------------
-T.section("the first state heard after a restart is reported silently")
+T.section("with nothing readable on the bound driver, the first state heard is silent")
 --------------------------------------------------------------------------------
 
 -- At controller start the entity is rebuilt with no state and Director binds it
