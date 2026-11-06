@@ -27,12 +27,6 @@ function C4:GetDriverConfigInfo(section)
   end
   return configInfo(self, section)
 end
-function C4:GetVersionInfo()
-  return { version = "3.3.0.0-res" }
-end
-function C4:UpdateProperty(name, value)
-  Properties[name] = value
-end
 
 -- An event from the last run: the driver's record stays, and the reboot has dropped the event from Director.
 local eventId = events:getOrAddEvent("Item", "doorbell", "Doorbell pressed", "The doorbell was pressed").eventId
