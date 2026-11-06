@@ -66,16 +66,11 @@ function MqttVariable:_processValue(value, rawPayload)
     return false
   end
 
-  local changed = self._state ~= value
   self._state = value
-
-  if not changed then
+  -- values:update rewrites the variable whenever it differs from the report, so a programming write the
+  -- device refused gives way to the device's next report of its value.
+  if not self.variableType or not values:update(self:getName(), value, self.variableType) then
     return false
-  end
-
-  -- Update C4 variable
-  if self.variableType then
-    values:update(self:getName(), value, self.variableType)
   end
 
   log:info("Variable '%s' updated: %s", self:getName(), value)
