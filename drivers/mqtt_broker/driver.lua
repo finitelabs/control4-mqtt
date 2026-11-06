@@ -384,7 +384,6 @@ function Connect()
     lastMessages[topic] = {
       payload = payload,
       qos = qos,
-      retain = retain,
     }
     routeMessageToSubscribers(topic, payload, qos, retain)
   end)
@@ -437,7 +436,8 @@ function RFP.SUBSCRIBE(idBinding, strCommand, tParams, args)
     log:debug("Subscribing to topic: %s (qos=%s)", topic, qos)
     MQTT:Subscribe(topic, qos)
   elseif not isNewTopicSubscription then
-    -- Send cached message to new subscriber (broker won't re-send retained messages)
+    -- Send cached message to new subscriber (broker won't re-send retained messages).
+    -- Marked retained, as a broker marks what it sends because of a new subscription.
     local cached = lastMessages[topic]
     if cached then
       log:debug("Sending cached message to new subscriber: device=%s topic=%s", deviceId, topic)
@@ -445,7 +445,7 @@ function RFP.SUBSCRIBE(idBinding, strCommand, tParams, args)
         topic = topic,
         payload = cached.payload,
         qos = tostring(cached.qos),
-        retain = cached.retain and "true" or "false",
+        retain = "true",
       })
     end
   end
