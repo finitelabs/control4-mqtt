@@ -86,6 +86,9 @@ function OnDriverLateInit()
     local status, err = pcall(OnPropertyChanged, p)
     if not status and err then
       log:error("Error in OnPropertyChanged for property '%s': %s", p, err or "unknown error")
+      --#ifdef DRIVERCENTRAL
+      diagnostics:captureError(tostring(err), nil, "MQTTBroker.OnPropertyChanged")
+      --#endif
     end
   end
   --#ifndef DRIVERCENTRAL
@@ -286,6 +289,106 @@ local function routeMessageToSubscribers(topic, payload, qos, retain)
   end
 end
 
+--- The client's connect callback.
+--- @param client userdata The client that called back.
+--- @param reasonCode integer 0 when the broker accepted the connection.
+--- @param _flags integer
+--- @param message? string What the reason code means.
+local function onConnect(client, reasonCode, _flags, message)
+  -- A client replaced by a later connect() still calls back; acting on it would
+  -- overwrite the new session's state.
+  if client ~= mqttClient then
+    log:debug("Ignoring stale OnConnect from replaced client")
+    return
+  end
+  log:info("MQTT:OnConnect reasonCode=%s message=%s", reasonCode, message or "")
+  if reasonCode == 0 then
+    -- A reconnect armed before this session came up would tear it down
+    CancelTimer("reconnect")
+
+    isBrokerConnected = true
+    updateStatus("Connected")
+    C4:FireEvent("Broker Connected")
+
+    for topic, bindings in pairs(subscriptions) do
+      if next(bindings) then
+        log:debug("Re-subscribing to topic: %s", topic)
+        client:Subscribe(topic)
+      end
+    end
+
+    notifyChildDrivers("BROKER_CONNECTED", {})
+  else
+    local errorMessage = message or client:ReasonCodeToString(reasonCode) or "unknown"
+    updateStatus("Connect failed: " .. errorMessage)
+    log:error("MQTT connection failed: %s", errorMessage)
+
+    SetTimer("reconnect", 30 * ONE_SECOND, function()
+      connect()
+    end)
+  end
+end
+
+--- The client's disconnect callback.
+--- @param client userdata The client that called back.
+--- @param reasonCode integer 0 for a clean close.
+local function onDisconnect(client, reasonCode)
+  -- Same stale-client guard as onConnect: the replaced client's own Disconnect() lands here.
+  if client ~= mqttClient then
+    log:debug("Ignoring stale OnDisconnect from replaced client")
+    return
+  end
+  local reasonString = client:ReasonCodeToString(reasonCode) or "unknown"
+  log:warn("MQTT:OnDisconnect reasonCode=%s - %s", reasonCode, reasonString)
+  isBrokerConnected = false
+  updateStatus("Disconnected")
+  C4:FireEvent("Broker Disconnected")
+
+  notifyChildDrivers("BROKER_DISCONNECTED", {})
+
+  -- A server's clean close (reasonCode 0) isn't retried, so a broker that
+  -- closes the connection on purpose isn't hammered.
+  if reasonCode ~= 0 then
+    SetTimer("reconnect", 30 * ONE_SECOND, function()
+      connect()
+    end)
+  end
+end
+
+--- The client's message callback.
+local function onMessage(_client, msgId, topic, payload, qos, retain)
+  log:debug("MQTT:OnMessage msgId=%s topic=%s payload=%s qos=%s retain=%s", msgId, topic, payload, qos, retain)
+  lastMessages[topic] = {
+    payload = payload,
+    qos = qos,
+  }
+  routeMessageToSubscribers(topic, payload, qos, retain)
+end
+
+--- The client's publish callback.
+local function onPublish(client, msgId, reasonCode)
+  if reasonCode ~= 0 then
+    local errorString = client:ErrorCodeToString(reasonCode) or "unknown"
+    log:error("MQTT:Publish error msgId=%s: %s - %s", msgId, reasonCode, errorString)
+  else
+    log:trace("MQTT:Publish success msgId=%s", msgId)
+  end
+end
+
+--- The client's subscribe callback.
+local function onSubscribe(_client, msgId, grantedQos)
+  log:debug("MQTT:OnSubscribe msgId=%s grantedQos=%s", msgId, grantedQos)
+end
+
+--#ifdef DRIVERCENTRAL
+-- The client calls these directly, with no dispatcher to report an error.
+onConnect = diagnostics:wrap(onConnect, "MQTTBroker.OnConnect")
+onDisconnect = diagnostics:wrap(onDisconnect, "MQTTBroker.OnDisconnect")
+onMessage = diagnostics:wrap(onMessage, "MQTTBroker.OnMessage")
+onPublish = diagnostics:wrap(onPublish, "MQTTBroker.OnPublish")
+onSubscribe = diagnostics:wrap(onSubscribe, "MQTTBroker.OnSubscribe")
+--#endif
+
 --- (Re)connects to the broker from the properties, replacing any client.
 connect = function()
   log:trace("connect()")
@@ -332,85 +435,11 @@ connect = function()
     mqttClient:SetUsernameAndPassword(username, password or "")
   end
 
-  mqttClient:OnConnect(function(obj, reasonCode, _flags, message)
-    -- A client replaced by a later connect() still calls back; acting on it would
-    -- overwrite the new session's state.
-    if obj ~= mqttClient then
-      log:debug("Ignoring stale OnConnect from replaced client")
-      return
-    end
-    log:info("MQTT:OnConnect reasonCode=%s message=%s", reasonCode, message or "")
-    if reasonCode == 0 then
-      -- A reconnect armed before this session came up would tear it down
-      CancelTimer("reconnect")
-
-      isBrokerConnected = true
-      updateStatus("Connected")
-      C4:FireEvent("Broker Connected")
-
-      for topic, bindings in pairs(subscriptions) do
-        if next(bindings) then
-          log:debug("Re-subscribing to topic: %s", topic)
-          mqttClient:Subscribe(topic)
-        end
-      end
-
-      notifyChildDrivers("BROKER_CONNECTED", {})
-    else
-      local errorMessage = message or mqttClient:ReasonCodeToString(reasonCode) or "unknown"
-      updateStatus("Connect failed: " .. errorMessage)
-      log:error("MQTT connection failed: %s", errorMessage)
-
-      SetTimer("reconnect", 30 * ONE_SECOND, function()
-        connect()
-      end)
-    end
-  end)
-
-  mqttClient:OnDisconnect(function(obj, reasonCode)
-    -- Same stale-client guard as OnConnect: the replaced client's own Disconnect() lands here.
-    if obj ~= mqttClient then
-      log:debug("Ignoring stale OnDisconnect from replaced client")
-      return
-    end
-    local reasonString = mqttClient and mqttClient:ReasonCodeToString(reasonCode) or "unknown"
-    log:warn("MQTT:OnDisconnect reasonCode=%s - %s", reasonCode, reasonString)
-    isBrokerConnected = false
-    updateStatus("Disconnected")
-    C4:FireEvent("Broker Disconnected")
-
-    notifyChildDrivers("BROKER_DISCONNECTED", {})
-
-    -- A server's clean close (reasonCode 0) isn't retried, so a broker that
-    -- closes the connection on purpose isn't hammered.
-    if reasonCode ~= 0 then
-      SetTimer("reconnect", 30 * ONE_SECOND, function()
-        connect()
-      end)
-    end
-  end)
-
-  mqttClient:OnMessage(function(_obj, msgId, topic, payload, qos, retain)
-    log:debug("MQTT:OnMessage msgId=%s topic=%s payload=%s qos=%s retain=%s", msgId, topic, payload, qos, retain)
-    lastMessages[topic] = {
-      payload = payload,
-      qos = qos,
-    }
-    routeMessageToSubscribers(topic, payload, qos, retain)
-  end)
-
-  mqttClient:OnPublish(function(_obj, msgId, reasonCode)
-    if reasonCode ~= 0 then
-      local errorString = mqttClient and mqttClient:ErrorCodeToString(reasonCode) or "unknown"
-      log:error("MQTT:Publish error msgId=%s: %s - %s", msgId, reasonCode, errorString)
-    else
-      log:trace("MQTT:Publish success msgId=%s", msgId)
-    end
-  end)
-
-  mqttClient:OnSubscribe(function(_obj, msgId, grantedQos)
-    log:debug("MQTT:OnSubscribe msgId=%s grantedQos=%s", msgId, grantedQos)
-  end)
+  mqttClient:OnConnect(onConnect)
+  mqttClient:OnDisconnect(onDisconnect)
+  mqttClient:OnMessage(onMessage)
+  mqttClient:OnPublish(onPublish)
+  mqttClient:OnSubscribe(onSubscribe)
 
   updateStatus("Connecting...")
   local keepAlive = tonumber(Properties["Keep Alive"]) or 60
