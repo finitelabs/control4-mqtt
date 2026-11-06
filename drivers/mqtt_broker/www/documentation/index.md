@@ -57,7 +57,7 @@ The MQTT driver suite consists of two drivers:
     - [Driver Properties](#driver-properties)
       - [Cloud Settings](#cloud-settings)
       - [Driver Settings](#driver-settings)
-      - [MQTT Settings](#mqtt-settings)
+      - [Broker Settings](#broker-settings)
   - [Driver Actions](#driver-actions)
   - [Programming](#programming)
   <!-- #ifdef DRIVERCENTRAL -->
@@ -131,7 +131,7 @@ for setting it up.
    in the "System Design" tab and perform the "Check Drivers" action.
    <br><img alt="Check Drivers" src="./images/check-drivers.png" width="300"/>
 
-1. Configure the [Device Settings](#device-settings) with the connection
+1. Configure the [Broker Settings](#broker-settings) with the connection
    information.
 
 1. After a few moments the [`Driver Status`](#driver-status-read-only) will
@@ -155,7 +155,7 @@ for setting it up.
    > ⚠️ A **_single_** broker driver instance is required per broker you wish to
    > connect to.
 
-1. Configure the [Device Settings](#device-settings) with the connection
+1. Configure the [Broker Settings](#broker-settings) with the connection
    information.
 
 1. After a few moments the [`Driver Status`](#driver-status-read-only) will
@@ -174,13 +174,13 @@ for setting it up.
 
 <!-- #ifdef DRIVERCENTRAL -->
 
-##### Cloud Status
+##### Cloud Status (read-only)
 
 Displays the DriverCentral cloud license status.
 
 <!-- #endif -->
 
-##### Automatic Updates
+##### Automatic Updates \[ Off | **_On_** \]
 
 <!-- #ifdef DRIVERCENTRAL -->
 
@@ -192,7 +192,7 @@ Broker or MQTT Universal item changes it on all of them.
 Turns on/off the GitHub cloud automatic updates. Changing it on any MQTT Broker
 item changes it on all of them.
 
-##### Update Channel
+##### Update Channel \[ **_Production_** | Prerelease \]
 
 Sets the update channel for which releases are considered during an automatic
 update from the GitHub repo releases. Changing it on any MQTT Broker item
@@ -210,9 +210,9 @@ Displays the current status of the driver.
 
 Displays the current version of the driver.
 
-##### Log Level \[ Fatal | Error | Warning | **_Info_** | Debug | Trace | Ultra \]
+##### Log Level \[ 0 - Fatal | 1 - Error | 2 - Warning | **_3 - Info_** | 4 - Debug | 5 - Trace | 6 - Ultra \]
 
-Sets the logging level. Default is `Info`.
+Sets the logging level. Default is `3 - Info`.
 
 ##### Log Mode \[ **_Off_** | Print | Log | Print and Log \]
 
@@ -240,7 +240,7 @@ address is removed.
 
 <!-- #endif -->
 
-#### MQTT Settings
+#### Broker Settings
 
 ##### Broker Address
 
@@ -251,9 +251,9 @@ HTTPS is not supported.
 > ⚠️ If you are using an IP address, you should ensure it will not change by
 > assigning a static IP or creating a DHCP reservation.
 
-##### Port
+##### Port \[ 1 - 65535, default: **_1883_** \]
 
-Sets the broker port. The default port for most brokers is `1883`.
+Sets the port the broker listens on. Default is `1883`.
 
 ##### Username
 
@@ -263,7 +263,7 @@ Sets the username for broker authentication (optional).
 
 Sets the password for broker authentication (optional).
 
-##### Keep Alive
+##### Keep Alive \[ 10 - 3600, default: **_60_** \]
 
 Sets the keep-alive interval in seconds. Default is `60`.
 
