@@ -200,6 +200,22 @@ do
   )
 end
 
+do
+  local contact, id = newContact()
+  C4:Unbind(900, 1)
+  C4:Unbind(901, 1)
+  C4:Bind(C4:GetDeviceID(), id, 900, 1, "CONTACT_SENSOR")
+  C4:Bind(C4:GetDeviceID(), id, 901, 1, "CONTACT_SENSOR")
+  ShimSetDevices({
+    [900] = { variables = { ["1000"] = { name = "ContactState", value = "1" } } },
+    [901] = { variables = { ["1000"] = { name = "ContactState", value = "0" } } },
+  })
+  bind(id)
+  contact:onMessage("open")
+  T.eq("two contact drivers that disagree get the first state silently", contactCommands(id), { "STATE_OPENED" })
+  C4:Unbind(901, 1)
+end
+
 ShimResetDevices()
 C4:Unbind(900, 1)
 
