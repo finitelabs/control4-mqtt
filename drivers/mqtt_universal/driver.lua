@@ -643,11 +643,14 @@ function OnDriverLateInit()
   -- Restore items and their callbacks/bindings
   restoreItems()
 
-  -- Fire OnPropertyChanged to set the initial Headers and other Property
+  -- Fire OnPropertyChanged once per property to set initial globals.
   for p, _ in pairs(Properties) do
     local status, err = pcall(OnPropertyChanged, p)
-    if not status and err ~= nil then
-      log:error(err)
+    if not status and err then
+      log:error("Error in OnPropertyChanged for property '%s': %s", p, err)
+      --#ifdef DRIVERCENTRAL
+      diagnostics:captureError(tostring(err), nil, "MqttUniversal.OnPropertyChanged")
+      --#endif
     end
   end
   gInitialized = true
