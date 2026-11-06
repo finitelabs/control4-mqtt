@@ -107,4 +107,46 @@ do
   T.eq("a humidity item's too", Variables["Bath"], nil)
 end
 
+--------------------------------------------------------------------------------
+T.section("an item whose variable is taken is not added")
+--------------------------------------------------------------------------------
+
+--- Add an item and return what the Add property then shows, and whether an item was added.
+local function add(property, name)
+  local before = TableLength(require("lib.persist"):get("Items", {}))
+  setProperty(property, name)
+  return Properties[property], TableLength(require("lib.persist"):get("Items", {})) > before
+end
+
+do
+  setProperty("Add Relay", "Garage")
+  local shown, added = add("Add String Variable", "Garage State")
+  T.eq("a variable named after a relay's State is refused", added, false)
+  T.eq("and says why", shown, "Error: Variable 'Garage State' is already in use")
+  _, added = add("Add String Variable", "Garage_State")
+  T.eq("so is one that differs only in spaces and underscores", added, false)
+end
+
+do
+  setProperty("Add String Variable", "Mode State")
+  local _, added = add("Add Relay", "Mode")
+  T.eq("a relay whose State another item has is refused", added, false)
+end
+
+do
+  local shown, added = add("Add String Variable", "Availability Status")
+  T.eq("the driver's Availability Status is taken", added, false)
+  T.eq("and says so", shown, "Error: Variable 'Availability Status' is already in use")
+  _, added = add("Add Number Variable", "Log Level")
+  T.eq("and so is a property's name", added, false)
+end
+
+do
+  local shown, added = add("Add Relay", "Garage")
+  T.eq("a name already used is still refused", added, false)
+  T.eq("with its own message", shown, "Error: Item with name 'Garage' already exists")
+  _, added = add("Add Button", "Garage State")
+  T.eq("a button owns no variable, so it may take a variable's name", added, true)
+end
+
 T.finish()

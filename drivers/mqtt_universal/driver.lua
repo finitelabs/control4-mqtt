@@ -199,7 +199,6 @@ end
 -- Item management
 -----------------------------------------------------------------------
 
---- Add a new item
 --- Check if an item with the given name already exists.
 --- @param name string Item name to check.
 --- @return boolean exists True if an item with this name exists.
@@ -213,16 +212,53 @@ local function itemNameExists(name)
   return false
 end
 
---- @param name string Item name
---- @param itemType string Item type
---- @return string|nil Item ID, or nil if name already exists
+--- The key OnVariableChanged finds a variable's handler by: its name with each run of spaces as one underscore.
+--- @param name string The variable name.
+--- @return string key The handler key.
+local function variableKey(name)
+  return (string.gsub(name, "%s+", "_"))
+end
+
+--- The first variable a new item would own that is taken: by another item, by the driver's Availability Status,
+--- or by a property, which a variable of the same name would overwrite.
+--- @param name string The new item's name.
+--- @param itemType string The new item's type.
+--- @return string|nil variable The taken variable's name, or nil when all are free.
+local function takenVariableName(name, itemType)
+  local EntityClass = ENTITY_CLASSES[itemType]
+  if EntityClass == nil then
+    return nil
+  end
+  local taken = { [variableKey("Availability Status")] = true }
+  for _, entity in pairs(entities) do
+    for _, variable in ipairs(entity:getVariableNames()) do
+      taken[variableKey(variable)] = true
+    end
+  end
+  for _, variable in ipairs(EntityClass:new({ name = name, itemType = itemType }, MQTT_BINDING):getVariableNames()) do
+    if taken[variableKey(variable)] or Properties[variable] ~= nil then
+      return variable
+    end
+  end
+  return nil
+end
+
+--- Add a new item.
+--- @param name string Item name.
+--- @param itemType string Item type.
+--- @return string|nil itemId The new item's ID, or nil when its name or a variable it would own is taken.
+--- @return string|nil reason Why the item was not added.
 local function addItem(name, itemType)
   log:trace("addItem(%s, %s)", name, itemType)
 
-  -- Validate unique name
   if itemNameExists(name) then
     log:print("Item with name '%s' already exists", name)
-    return nil
+    return nil, "Item with name '" .. name .. "' already exists"
+  end
+  local takenVariable = takenVariableName(name, itemType)
+  if takenVariable then
+    log:print("Item '%s' not added; variable '%s' is already in use", name, takenVariable)
+    return nil, "Variable '" .. takenVariable .. "' is already in use"
   end
 
   local items = getItems()
@@ -779,11 +815,11 @@ local function createAddItemHandler(itemType, propertyName)
       return
     end
 
-    local itemId = addItem(propertyValue, itemType)
+    local itemId, reason = addItem(propertyValue, itemType)
 
     if itemId == nil then
       -- Show error in property field, then clear after delay
-      UpdateProperty(propertyName, "Error: Item with name '" .. propertyValue .. "' already exists")
+      UpdateProperty(propertyName, "Error: " .. reason)
       delay(2 * ONE_SECOND):next(function()
         UpdateProperty(propertyName, "")
       end)
