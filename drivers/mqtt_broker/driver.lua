@@ -56,6 +56,17 @@ local lastMessages = {}
 --- Defined with the connection code below; the lifecycle and property handlers need it first.
 local connect
 
+--- Drops the client. It is cleared before its Disconnect, so the disconnect it calls back is ignored as stale.
+local function dropClient()
+  local client = mqttClient
+  mqttClient = nil
+  connecting = false
+  if client then
+    log:debug("Disconnecting existing MQTT connection")
+    client:Disconnect()
+  end
+end
+
 --#ifndef DRIVERCENTRAL
 --- Get all MQTT driver instances sorted by device ID
 --- @return integer[] deviceIds Sorted list of device IDs
@@ -128,8 +139,18 @@ function OnDriverLateInit()
   --#endif
 end
 
+function OnDriverDestroyed()
+  log:trace("OnDriverDestroyed()")
+  CancelTimer("reconnect")
+  --#ifndef DRIVERCENTRAL
+  CancelTimer("UpdateCheck")
+  --#endif
+  dropClient()
+end
+
 --#ifdef DRIVERCENTRAL
 OnDriverLateInit = diagnostics:wrapLateInit(OnDriverLateInit)
+OnDriverDestroyed = diagnostics:wrap(OnDriverDestroyed, "OnDriverDestroyed")
 --#endif
 
 -----------------------------------------------------------------------
@@ -436,13 +457,7 @@ connect = function()
   CancelTimer("reconnect")
   -- The replaced client's own disconnect is ignored as stale, so the change is told here.
   setConnected(false)
-
-  if mqttClient then
-    log:debug("Disconnecting existing MQTT connection")
-    mqttClient:Disconnect()
-    mqttClient = nil
-  end
-  connecting = false
+  dropClient()
 
   local brokerAddress = Properties["Broker Address"]
   local port = tonumber(Properties["Port"]) or 1883

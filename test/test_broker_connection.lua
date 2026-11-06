@@ -63,6 +63,7 @@ function C4:MQTT()
     end
   end
   function client:Disconnect()
+    self.disconnected = true
     queued[#queued + 1] = function()
       self.cb.OnDisconnect(self, 0, "")
     end
@@ -294,5 +295,25 @@ for _ = 1, 2 do
   retry()
 end
 T.eq("sessions that end at once keep the waits growing", waits, { 4000, 8000 })
+
+--------------------------------------------------------------------------------
+T.section("removing or updating the broker closes its connection and leaves nothing armed")
+--------------------------------------------------------------------------------
+
+reset()
+local live = broker.client
+OnDriverDestroyed()
+T.truthy("the live session is disconnected", live.disconnected)
+answer()
+T.eq("its disconnect fires nothing", fired, {})
+T.falsy("and arms no retry", retry())
+T.eq("the update check is cancelled", Timer.UpdateCheck, nil)
+
+broker.up = false
+EC.Reconnect()
+answer()
+T.truthy("a refused attempt arms a retry", Timer.reconnect ~= nil)
+OnDriverDestroyed()
+T.eq("which is cancelled", Timer.reconnect, nil)
 
 T.finish()

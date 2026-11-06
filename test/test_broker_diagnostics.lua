@@ -138,4 +138,13 @@ failDelivery = false
 T.truthy("a failed delivery doesn't escape the callback", ok)
 T.eq("it is reported as the message callback's", sourcesSince(before), { "MQTTBroker.OnMessage" })
 
+--------------------------------------------------------------------------------
+T.section("an error as the broker is removed is reported")
+--------------------------------------------------------------------------------
+
+T.truthy(
+  "OnDriverDestroyed runs through Cloud Monitoring's wrap",
+  debug.getinfo(OnDriverDestroyed, "S").source:match("lib[/\\]diagnostics%.lua$") ~= nil
+)
+
 T.finish()
