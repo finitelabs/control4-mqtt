@@ -132,7 +132,7 @@ local function load(answer, brokerUp)
   }
   F.dofileBuild(ROOT .. "drivers/mqtt_broker/driver.lua", "drivercentral")
   OnDriverInit()
-  OnDriverLateInit("DIT_STARTUP")
+  ShimLateInit("DIT_STARTUP")
 end
 
 --- `n` rounds of 10 s: one ping, then one read by the gate.
