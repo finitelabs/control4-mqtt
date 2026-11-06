@@ -195,6 +195,7 @@ function OPC.Username(propertyValue)
   Connect()
 end
 
+OPC.suppressDebug["Password"] = true
 function OPC.Password(propertyValue)
   log:trace("OPC.Password('%s')", not IsEmpty(propertyValue) and "****" or "")
   Connect()
