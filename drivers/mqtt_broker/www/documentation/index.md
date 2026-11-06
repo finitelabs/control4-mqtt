@@ -22,10 +22,9 @@ ______________________________________________________________________
 > DISCLAIMER: This software is neither affiliated with nor endorsed by either
 > Control4 or MQTT.
 
-The MQTT Broker driver connects Control4 to an MQTT broker (such as Mosquitto,
-HiveMQ, or other MQTT-compatible platforms). It manages the connection and
-provides pub/sub services to child drivers that connect via the MQTT broker
-connection binding.
+The MQTT Broker driver connects Control4 to any MQTT broker. It manages the
+connection and provides pub/sub services to child drivers that connect via the
+MQTT broker connection binding.
 
 ## Driver Suite
 
@@ -245,9 +244,8 @@ address is removed.
 
 ##### Broker Address
 
-Sets the broker IP address (e.g. `192.168.1.30`). Domain names are allowed as
-long as they can be resolved to an accessible IP address by the controller.
-HTTPS is not supported.
+Sets the broker's IP address. A host name also works when the controller can
+resolve it. HTTPS is not supported.
 
 > ⚠️ If you are using an IP address, you should ensure it will not change by
 > assigning a static IP or creating a DHCP reservation.
