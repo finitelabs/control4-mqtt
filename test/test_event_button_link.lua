@@ -8,9 +8,7 @@
 --   ./test/run_test.sh test_event_button_link.lua
 --
 -- DO_CLICK and DO_RELEASE are the two mutually exclusive terminations of one
--- press, and a bound load reads DO_RELEASE as the end of a hold. The old
--- DO_CLICK/DO_PUSH/DO_RELEASE triple therefore started a click, started a hold,
--- then froze the ramp a bound light had just begun.
+-- press, and a bound load reads DO_RELEASE as the end of a hold.
 --
 -- Regression test for DRV-120.
 
