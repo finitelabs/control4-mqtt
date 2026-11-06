@@ -88,18 +88,16 @@ function MqttSensor:_processValue(value, rawPayload)
 
   local changed = self._state ~= numValue
   self._state = numValue
-
-  -- Update C4 variable
   values:update(self:getName(), value, self.c4VarType or "FLOAT")
-
-  -- Send to binding
-  self:sendValue(numValue)
-
-  if changed then
-    log:info("Sensor '%s' value: %s", self:getName(), numValue)
+  if not changed then
+    return false
   end
 
-  return changed
+  -- The first reading after a start or a broker rebind goes out even when unchanged: a bound
+  -- thermostat comes back from a controller restart with no reading.
+  self:sendValue(numValue)
+  log:info("Sensor '%s' value: %s", self:getName(), numValue)
+  return true
 end
 
 --- Send the sensor value to bound consumers.
@@ -124,7 +122,7 @@ function MqttSensor:sendValue(value)
     log:debug("Sending humidity value: %s to binding %s", value, binding.bindingId)
   end
 
-  SendToProxy(binding.bindingId, "VALUE_CHANGED", SensorValueParams(value, scale))
+  SendToProxy(binding.bindingId, "VALUE_CHANGED", SensorValueParams(value, scale), "NOTIFY")
 end
 
 --- Register the sensor binding and handlers.
