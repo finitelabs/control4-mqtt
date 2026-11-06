@@ -11,6 +11,8 @@ require("drivers-common-public.global.handlers")
 require("drivers-common-public.global.lib")
 require("drivers-common-public.global.timer")
 
+JSON = require("JSON")
+
 local bindings = require("lib.bindings")
 local events = require("lib.events")
 local log = require("lib.logging")
@@ -62,22 +64,22 @@ local entities = {}
 -- Item storage functions
 -----------------------------------------------------------------------
 
---- Get all items from persistent storage
---- @return table<string, table> Items indexed by ID
+--- Get all items from persistent storage.
+--- @return table<string, table> items Items indexed by ID.
 local function getItems()
   log:trace("getItems()")
   return persist:get(ITEMS_PERSIST_KEY, {}) or {}
 end
 
---- Save items to persistent storage
---- @param items table<string, table> Items to save
+--- Save items to persistent storage.
+--- @param items table<string, table> Items to save.
 local function saveItems(items)
   log:trace("saveItems(%s)", items)
   persist:set(ITEMS_PERSIST_KEY, not IsEmpty(items) and items or nil)
 end
 
---- Get the next available item ID
---- @return number Next available ID
+--- Get the next available item ID.
+--- @return number itemId The next available ID.
 local function getNextItemId()
   log:trace("getNextItemId()")
   local items = getItems()
@@ -88,18 +90,18 @@ local function getNextItemId()
   return id
 end
 
---- Get a single item by ID
---- @param itemId string|number Item ID
---- @return table|nil Item data or nil if not found
+--- Get a single item by ID.
+--- @param itemId string|number Item ID.
+--- @return table|nil item Item data, or nil if not found.
 local function getItem(itemId)
   log:trace("getItem(%s)", itemId)
   local items = getItems()
   return items[tostring(itemId)]
 end
 
---- Parse item ID from display name format "Name (TYPE) [ID]"
---- @param displayName string Display name from dynamic list
---- @return string|nil Item ID or nil
+--- Parse item ID from display name format "Name (TYPE) [ID]".
+--- @param displayName string Display name from dynamic list.
+--- @return string|nil itemId The item ID, or nil.
 local function parseItemId(displayName)
   log:trace("parseItemId(%s)", displayName)
   return string.match(displayName or "", "%[(%d+)%]$")
@@ -116,7 +118,7 @@ local function getSelectedItemId()
 end
 
 --- Get the currently selected item for configuration.
---- @return table|nil Selected item or nil.
+--- @return table|nil item The selected item, or nil.
 local function getSelectedItem()
   log:trace("getSelectedItem()")
   local itemId = getSelectedItemId()
@@ -126,15 +128,15 @@ local function getSelectedItem()
   return getItem(itemId)
 end
 
---- Get entity instance for an item
---- @param itemId string|number Item ID
---- @return MqttEntity|nil Entity instance or nil
+--- Get entity instance for an item.
+--- @param itemId string|number Item ID.
+--- @return MqttEntity|nil entity The entity instance, or nil.
 local function getEntity(itemId)
   return entities[tostring(itemId)]
 end
 
---- Get currently selected entity
---- @return MqttEntity|nil
+--- Get currently selected entity.
+--- @return MqttEntity|nil entity The selected entity, or nil.
 local function getSelectedEntity()
   local itemId = getSelectedItemId()
   if itemId == nil then
@@ -143,9 +145,9 @@ local function getSelectedEntity()
   return getEntity(itemId)
 end
 
---- Create an entity instance for an item
---- @param item table Item data
---- @return MqttEntity|nil Entity instance
+--- Create an entity instance for an item.
+--- @param item table Item data.
+--- @return MqttEntity|nil entity The entity instance, or nil for an unknown type.
 local function createEntity(item)
   local EntityClass = ENTITY_CLASSES[item.itemType]
   if EntityClass == nil then
@@ -296,7 +298,6 @@ local function addItem(name, itemType)
   items[tostring(itemId)] = itemData
   saveItems(items)
 
-  -- Create entity instance
   local entity = createEntity(itemData)
   if entity == nil then
     log:error("Failed to create entity for item %s", name)
@@ -327,18 +328,15 @@ local function deleteItem(itemId)
 
   local entity = getEntity(itemId)
   if entity then
-    -- Unsubscribe from topics
     local deviceId = tostring(C4:GetDeviceID())
     entity:unsubscribe(deviceId)
 
     entity:unregisterBinding()
     entity:deleteVariables()
 
-    -- Destroy entity
     destroyEntity(itemId)
   end
 
-  -- Remove from storage
   items[tostring(itemId)] = nil
   saveItems(items)
 
@@ -370,7 +368,6 @@ local function updateItemConfig(itemId, config)
     end
   end
 
-  -- Update configuration
   for key, value in pairs(config) do
     item[key] = value
   end
@@ -399,7 +396,6 @@ end
 local function updateItemProperties()
   log:trace("updateItemProperties()")
 
-  -- Clear add property fields
   UpdateProperty("Add Relay", "")
   UpdateProperty("Add Contact", "")
   UpdateProperty("Add Button", "")
@@ -411,7 +407,6 @@ local function updateItemProperties()
   UpdateProperty("Add Temperature Variable", "")
   UpdateProperty("Add Humidity Variable", "")
 
-  -- Build item list
   local itemList = {}
   for _, item in pairs(getItems()) do
     table.insert(itemList, item.displayName)
@@ -420,7 +415,6 @@ local function updateItemProperties()
   table.insert(itemList, 1, SELECT_OPTION)
   local itemOptions = table.concat(itemList, ",")
 
-  -- Update dynamic lists
   C4:UpdatePropertyList("Remove Item", itemOptions, SELECT_OPTION)
   C4:UpdatePropertyList("Configure Item", itemOptions, SELECT_OPTION)
 
@@ -555,7 +549,6 @@ local function updateItemConfigProperties()
     hasValuePath = hasItem and not IsEmpty(item.valuePath),
   }
 
-  -- Apply visibility rules
   for propName, predicate in pairs(VISIBILITY_RULES) do
     local visible = predicate(ctx)
     C4:SetPropertyAttribs(propName, visible and constants.SHOW_PROPERTY or constants.HIDE_PROPERTY)
@@ -566,7 +559,6 @@ local function updateItemConfigProperties()
     return
   end
 
-  -- Apply property value mappings
   for propName, mapping in pairs(PROPERTY_VALUES) do
     local value
     if type(mapping) == "function" then
@@ -611,7 +603,6 @@ end
 local function restoreItems()
   log:trace("restoreItems()")
 
-  -- Create entity instances for all items
   for itemId, item in pairs(getItems()) do
     local entity = createEntity(item)
     if entity then
@@ -645,7 +636,6 @@ function OnDriverInit()
   log:setLogMode(Properties["Log Mode"])
   log:trace("OnDriverInit()")
 
-  -- Initialize MqttDevice
   MqttDevice:init(MQTT_BINDING)
 
   -- Restore values and bindings from persistent storage
@@ -682,11 +672,9 @@ function OnDriverLateInit()
   local hasAvailabilityTopic = not IsEmpty(Properties["Availability Topic"])
   MqttDevice:registerAvailabilityEvents(hasAvailabilityTopic)
 
-  -- Update property visibility
   updateAvailabilityPropertyVisibility()
   updateItemProperties()
 
-  -- Request current broker status
   SendToProxy(MQTT_BINDING, "GET_STATUS", {}, "NOTIFY")
 end
 
@@ -706,6 +694,14 @@ function OPC.Automatic_Updates(propertyValue)
   end
 end
 --#endif
+
+function OPC.Driver_Status(propertyValue)
+  log:trace("OPC.Driver_Status('%s')", propertyValue)
+  if not gInitialized then
+    UpdateProperty("Driver Status", "Initializing", false)
+    return
+  end
+end
 
 function OPC.Driver_Version(propertyValue)
   log:trace("OPC.Driver_Version('%s')", propertyValue)
@@ -835,13 +831,11 @@ local function createAddItemHandler(itemType, propertyName)
   end
 end
 
--- Add device handlers
 OPC.Add_Relay = createAddItemHandler("RELAY", "Add Relay")
 OPC.Add_Contact = createAddItemHandler("CONTACT", "Add Contact")
 OPC.Add_Button = createAddItemHandler("BUTTON", "Add Button")
 OPC.Add_Event = createAddItemHandler("EVENT", "Add Event")
 
--- Add variable handlers
 OPC.Add_String_Variable = createAddItemHandler("STRING", "Add String Variable")
 OPC.Add_Bool_Variable = createAddItemHandler("BOOL", "Add Bool Variable")
 OPC.Add_Number_Variable = createAddItemHandler("NUMBER", "Add Number Variable")
@@ -849,7 +843,6 @@ OPC.Add_Float_Variable = createAddItemHandler("FLOAT", "Add Float Variable")
 OPC.Add_Temperature_Variable = createAddItemHandler("TEMPERATURE", "Add Temperature Variable")
 OPC.Add_Humidity_Variable = createAddItemHandler("HUMIDITY", "Add Humidity Variable")
 
--- Item management handlers
 function OPC.Remove_Item(propertyValue)
   log:trace("OPC.Remove_Item('%s')", propertyValue)
   if not gInitialized then
@@ -873,7 +866,7 @@ end
 
 --- Create an item config property handler.
 --- @param configKey string The config key to update.
---- @param opts table|nil Optional settings.
+--- @param opts? table { default?: any, transform?: fun(v: string): any, postUpdate?: fun(itemId: string) }
 --- @return function handler The property change handler.
 local function createConfigHandler(configKey, opts)
   opts = opts or {}
@@ -909,7 +902,6 @@ local function reevaluateState(itemId)
   updateItemConfigProperties()
 end
 
--- Item configuration handlers
 OPC.Temperature_Scale = createConfigHandler("temperatureScale", { default = "Celsius" })
 OPC.Value_Path = createConfigHandler("valuePath", { default = "", postUpdate = reevaluateState })
 OPC.State_On = createConfigHandler("stateOn", { default = "", postUpdate = reevaluateState })
@@ -1032,7 +1024,10 @@ function EC.MQTT_MESSAGE(tParams)
   end
 end
 
-function getItemParamNames(itemType)
+--- The items of a type as command parameters list them, "Name [ID]", sorted.
+--- @param itemType string|nil The item type, or nil for every item.
+--- @return string[] names The parameter names.
+local function getItemParamNames(itemType)
   log:trace("getItemParamNames(%s)", itemType)
   local names = {}
   for _, item in pairs(getItems()) do
@@ -1044,7 +1039,11 @@ function getItemParamNames(itemType)
   return names
 end
 
-function getItemByParamName(paramName)
+--- Find an item by the "Name [ID]" a command parameter carries.
+--- @param paramName string The parameter value.
+--- @return table|nil item The item, or nil if none matches.
+--- @return MqttEntity|nil entity The item's entity, or nil.
+local function getItemByParamName(paramName)
   log:trace("getItemByParamName(%s)", paramName)
   for itemId, item in pairs(getItems()) do
     local itemParamName = item.name .. " [" .. item.id .. "]"
