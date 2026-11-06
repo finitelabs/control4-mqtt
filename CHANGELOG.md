@@ -64,17 +64,17 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   change was copied to them.
   <!-- #endif -->
 
-<!-- #ifdef DRIVERCENTRAL -->
-
 ### Changed
 
+- Changed MQTT Universal's Composer category from Misc to Utility, so it is
+  listed beside the MQTT Broker.
+  <!-- #ifdef DRIVERCENTRAL -->
 - Changed Automatic Updates to one setting for the MQTT Broker and MQTT
   Universal drivers: changing it on any of them now changes it on all of them.
 - Without an active license or trial, the MQTT Broker now disconnects five
   minutes after it loads and shows `No active license`. It connects again as
   soon as a license is active, with no Reconnect needed.
-
-<!-- #endif -->
+  <!-- #endif -->
 
 ## v20261024 - 2026-10-24
 
