@@ -193,7 +193,11 @@ do
   sent = {}
   contact:reset()
   contact:onMessage("closed")
-  T.eq("after a broker rebind, a first state the contact doesn't show is a change too", contactCommands(id), { "CLOSED" })
+  T.eq(
+    "after a broker rebind, a first state the contact doesn't show is a change too",
+    contactCommands(id),
+    { "CLOSED" }
+  )
 end
 
 ShimResetDevices()
