@@ -40,6 +40,9 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Fixed an MQTT Universal relay item running the bound relay's programming every
   time the controller restarted. Programming now runs only when the relay opens
   or closes.
+- Fixed MQTT Universal declaring its events again too early in its startup,
+  which could leave an event item missing from Programming after a controller
+  reboot until the driver was reloaded.
 
 ### Changed
 
