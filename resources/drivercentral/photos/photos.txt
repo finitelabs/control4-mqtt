@@ -1,2 +1,6 @@
 # <output name>|<query>: one listing photo per line, in upload order. README.md lists the fields.
-# 1-overview|img=overview.png&fit=1&t=Title%20of%20the%20photo&s=One%20sentence%20on%20what%20it%20shows.
+1-any-mqtt-device|img=composer-items.png&fit=1&t=Any%20MQTT%20device&s=Add%20relays%2C%20contacts%2C%20buttons%2C%20events%20and%20variables%2C%20each%20on%20its%20own%20topics.
+2-json-values|img=composer-item-settings.png&fit=1&t=Values%20from%20JSON&s=An%20item%20takes%20its%20topic%27s%20payload%20as%20is%2C%20or%20one%20value%20out%20of%20JSON.
+3-connections|img=composer-connections.png&fit=1&t=Connections&s=Relays%2C%20contacts%2C%20sensors%20and%20keypad%20links%20connect%20like%20any%20Control4%20device.
+4-programming|img=composer-programming.png&fit=1&t=Programming&s=Each%20item%27s%20events%20and%20variables%20in%20Control4%20programming.
+5-setup|img=composer-broker-setup.png&fit=1&t=Setup&s=Enter%20the%20broker%27s%20address%20and%20login.%20MQTT%20Universal%20connects%20through%20it.
