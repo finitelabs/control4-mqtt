@@ -164,43 +164,55 @@ only while Cloud Monitoring is Enabled.
 
 #### Availability Settings
 
-These settings control global device availability for all items in the driver.
+These settings track one availability topic for the whole driver.
 
 ##### Availability Topic
 
-The MQTT topic to subscribe for availability status (optional). When a message
-is received, the driver will fire Device Available or Device Unavailable events.
+Sets the topic the driver subscribes to for the device's availability. Leave it
+empty if the device has no availability topic. Setting it adds the Device
+Available and Device Unavailable events and the availability conditional. Set
+[Payload Available](#payload-available),
+[Payload Not Available](#payload-not-available) or both to say which payloads
+mean what.
+
+> ⚠️ Clearing it removes the Device Available and Device Unavailable events and
+> the availability conditional, along with the programming on those events.
 
 ##### Availability Topic Value (read-only)
 
-Shows the raw payload received from the availability topic.
-
-##### Availability Status (read-only)
-
-Shows the current availability status (Available or Unavailable).
-
-##### Payload Available
-
-The payload that indicates the device is available.
-
-##### Payload Not Available
-
-The payload that indicates the device is unavailable.
+Shown only when [Availability Topic](#availability-topic) is set. Displays the
+last payload received on it.
 
 ##### Availability Value Path
 
-JSONPath expression to extract the availability value from a JSON payload. Leave
-empty to use the raw payload. This property appears when Availability Topic is
-configured.
-
-Example: If your availability topic publishes `{"status": "online"}`, set this
-to `$.status` to extract the `online` value.
+Shown only when [Availability Topic](#availability-topic) is set. Sets a
+JSONPath that picks the availability value out of a JSON payload. Leave it empty
+to use the whole payload. It takes the same paths as [Value Path](#value-path).
 
 ##### Availability Value Path Result (read-only)
 
-Shows the result of the JSONPath extraction, or an error message if extraction
-failed. This property appears when both Availability Topic and Availability
-Value Path are configured.
+Shown only when [Availability Topic](#availability-topic) and
+[Availability Value Path](#availability-value-path) are set. Displays the value
+the path picked from the last payload, or `Error: Invalid JSON` or
+`Error: Path not found`.
+
+##### Availability Status (read-only)
+
+Shown only when [Availability Topic](#availability-topic) is set. Displays
+`Available` or `Unavailable` once a payload matches.
+
+##### Payload Available
+
+Shown only when [Availability Topic](#availability-topic) is set. Sets the
+payload that means the device is available. If only this is set, any other
+payload means unavailable. If both payloads are set, a payload that matches
+neither is ignored.
+
+##### Payload Not Available
+
+Shown only when [Availability Topic](#availability-topic) is set. Sets the
+payload that means the device is unavailable. If only this is set, any other
+payload means available.
 
 #### Add Devices
 

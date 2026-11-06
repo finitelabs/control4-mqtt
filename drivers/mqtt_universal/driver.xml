@@ -128,7 +128,7 @@
         <name>Availability Value Path</name>
         <type>STRING</type>
         <default/>
-        <description>JSONPath to extract availability value (e.g., "$.status"). Leave empty to use raw payload.</description>
+        <description>JSONPath to the availability value; leave empty to use the whole payload.</description>
       </property>
       <property>
         <name>Availability Value Path Result</name>
@@ -148,13 +148,13 @@
         <name>Payload Available</name>
         <type>STRING</type>
         <default/>
-        <description>Payload that indicates device is available (if only this is set, other values mean unavailable)</description>
+        <description>Payload that means the device is available.</description>
       </property>
       <property>
         <name>Payload Not Available</name>
         <type>STRING</type>
         <default/>
-        <description>Payload that indicates device is not available (if only this is set, other values mean available)</description>
+        <description>Payload that means the device is unavailable.</description>
       </property>
       <!-- Add Devices Section -->
       <property>
