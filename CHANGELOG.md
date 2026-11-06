@@ -46,8 +46,9 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   which could leave an event item missing from Programming after a controller
   reboot until the driver was reloaded.
 - Fixed an MQTT Universal event item firing again, running its programming and
-  pressing a bound button, when the driver was updated or an item's settings
-  were changed. An event item now fires only when a new message arrives.
+  pressing a bound button, when the driver was updated, the MQTT Broker
+  reconnected or an item's settings were changed. An event item now fires only
+  when a new message arrives.
   <!-- #ifdef DRIVERCENTRAL -->
 - Fixed a licensed MQTT Broker staying disconnected until Reconnect when it lost
   the broker while the DriverCentral Cloud driver was not answering. It now
