@@ -626,8 +626,7 @@ function OnDriverInit()
   -- Initialize MqttDevice
   MqttDevice:init(MQTT_BINDING)
 
-  -- Restore events, values, and bindings from persistent storage
-  events:restoreEvents()
+  -- Restore values and bindings from persistent storage
   values:restoreValues()
   bindings:restoreBindings()
 end
@@ -638,6 +637,8 @@ function OnDriverLateInit()
     return
   end
   UpdateProperty("Driver Status", "Initializing")
+
+  events:restoreEvents()
 
   -- Restore items and their callbacks/bindings
   restoreItems()
