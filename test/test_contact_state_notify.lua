@@ -136,4 +136,57 @@ do
   T.eq("the same state again sends nothing", contactCommands(id), {})
 end
 
+--------------------------------------------------------------------------------
+T.section("the first state is checked against the bound contact driver")
+--------------------------------------------------------------------------------
+
+--- Bind to a contact driver showing `shown` in its ContactState ("0" open, "1" closed), or nothing readable.
+local function bindShowing(bindingId, shown)
+  C4:Unbind(900, 1)
+  C4:Bind(C4:GetDeviceID(), bindingId, 900, 1, "CONTACT_SENSOR")
+  ShimSetDevices({ [900] = { variables = shown and { ["1000"] = { name = "ContactState", value = shown } } or {} } })
+  bind(bindingId)
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, "1")
+  contact:onMessage("closed")
+  T.eq("a first state the contact already shows is silent", contactCommands(id), { "STATE_CLOSED" })
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, "1")
+  contact:onMessage("open", true)
+  T.eq("a first state the contact doesn't show is a change: OPENED", contactCommands(id), { "OPENED" })
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, "0")
+  contact:onMessage("closed")
+  T.eq("and the other way round: CLOSED", contactCommands(id), { "CLOSED" })
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, nil)
+  contact:onMessage("open")
+  T.eq("a contact driver with nothing readable gets it silently", contactCommands(id), { "STATE_OPENED" })
+end
+
+do
+  local contact, id = newContact()
+  bindShowing(id, "1")
+  sent = {}
+  contact:onMessage("closed")
+  sent = {}
+  contact:onMessage("open")
+  T.eq("after the first state, a change is OPENED as before", contactCommands(id), { "OPENED" })
+end
+
+ShimResetDevices()
+C4:Unbind(900, 1)
+
 T.finish()

@@ -309,4 +309,47 @@ do
   T.eq("custom payloads are published", published(), { "1", "0" })
 end
 
+--------------------------------------------------------------------------------
+T.section("the first state is checked against the bound relay driver")
+--------------------------------------------------------------------------------
+
+--- Bind to a relay driver showing `shown` in its RelayState ("1" closed, "0" open), or nothing readable.
+local function bindShowing(bindingId, shown)
+  C4:Unbind(900, 1)
+  C4:Bind(C4:GetDeviceID(), bindingId, 900, 1, "RELAY")
+  ShimSetDevices({ [900] = { variables = shown and { ["1000"] = { name = "RelayState", value = shown } } or {} } })
+  bind(bindingId)
+end
+
+do
+  local relay, id = newRelay()
+  bindShowing(id, "1")
+  relay:onMessage("ON")
+  T.eq("a first state the relay already shows is silent", relayCommands(id), { "STATE_CLOSED" })
+end
+
+do
+  local relay, id = newRelay()
+  bindShowing(id, "1")
+  relay:onMessage("OFF", true)
+  T.eq("a first state the relay doesn't show is a change: OPENED", relayCommands(id), { "OPENED" })
+end
+
+do
+  local relay, id = newRelay()
+  bindShowing(id, "0")
+  relay:onMessage("ON")
+  T.eq("and the other way round: CLOSED", relayCommands(id), { "CLOSED" })
+end
+
+do
+  local relay, id = newRelay()
+  bindShowing(id, nil)
+  relay:onMessage("ON")
+  T.eq("a relay driver with nothing readable gets it silently", relayCommands(id), { "STATE_CLOSED" })
+end
+
+ShimResetDevices()
+C4:Unbind(900, 1)
+
 T.finish()

@@ -10,6 +10,9 @@ local values = require("lib.values")
 local stateParser = require("mqtt.state_parser")
 local MqttEntity = require("mqtt.entities.base")
 
+--- The bound relay driver's RelayState variable: "1" closed, "0" open.
+local RELAY_STATE_VARIABLE = 1000
+
 local MqttRelay = setmetatable({
   TYPE = "RELAY",
   BINDING_CLASS = "RELAY",
@@ -85,8 +88,8 @@ function MqttRelay:_processValue(value, rawPayload)
 end
 
 --- Update the relay state and notify binding.
---- The first state heard since start or a broker rebind is what the relay
---- already was, so it is sent silently unless a command was sent before it.
+--- The first state heard since start or a broker rebind is sent silently, unless
+--- a command was sent before it or the bound relay shows the other state.
 --- @param newState boolean The new state.
 --- @param payload string|nil The raw payload (for display).
 --- @return boolean changed Whether the state changed.
@@ -108,7 +111,7 @@ function MqttRelay:_updateState(newState, payload)
   -- Notify binding
   local binding = bindings:getDynamicBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
   if binding then
-    if eventful then
+    if eventful or self:_boundDeviceShowsOther(binding.bindingId, RELAY_STATE_VARIABLE, newState and "1" or "0") then
       local bindingState = newState and "CLOSED" or "OPENED"
       log:debug("Sending relay state %s to binding %s", bindingState, binding.bindingId)
       SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
