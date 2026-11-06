@@ -94,7 +94,6 @@ end
 function MqttEvent:_processValue(value, rawPayload, retained)
   local eventType = tostring(value)
 
-  -- A stored message is an event that already happened, not a new one.
   if retained then
     log:debug("Event '%s' - ignored a stored message: %s", self:getName(), eventType)
     return false
