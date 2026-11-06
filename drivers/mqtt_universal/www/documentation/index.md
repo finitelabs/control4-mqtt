@@ -22,11 +22,9 @@ ______________________________________________________________________
 > DISCLAIMER: This software is neither affiliated with nor endorsed by either
 > Control4 or MQTT.
 
-The MQTT Universal driver is a comprehensive solution for integrating MQTT
-devices and variables with Control4. It allows you to dynamically create relays,
-contact sensors, buttons, and variables that sync with MQTT topics. Each item
-can be configured with its own state and command topics, enabling flexible
-integration with any MQTT-based system.
+The MQTT Universal driver brings MQTT devices and values into Control4. You add
+relays, contact sensors, buttons, events and variables, and give each its own
+state and command topics. It reaches the broker through the MQTT Broker driver.
 
 # <span style="color:#660066">Index</span>
 
@@ -70,18 +68,20 @@ integration with any MQTT-based system.
 
 **Devices:**
 
-- **Relays** - Create RELAY bindings for on/off control with state feedback
-- **Contact Sensors** - Create CONTACT_SENSOR bindings for open/closed state
+- **Relays** - Create `RELAY` bindings for on/off control with state feedback
+- **Contact Sensors** - Create `CONTACT_SENSOR` bindings for open/closed state
 - **Buttons** - Publish press commands to MQTT topics, with optional keypad
   linking
-- **Events** - Create BUTTON_LINK bindings that trigger on MQTT messages, for
+- **Events** - Create `BUTTON_LINK` bindings that trigger on MQTT messages, for
   keypad integration
 
 **Variables:**
 
 - **String/Bool/Number/Float** - Create Control4 variables synced with MQTT
-- **Temperature** - Create TEMPERATURE_VALUE bindings for thermostat integration
-- **Humidity** - Create HUMIDITY_VALUE bindings for humidity sensor integration
+- **Temperature** - Create `TEMPERATURE_VALUE` bindings for thermostat
+  integration
+- **Humidity** - Create `HUMIDITY_VALUE` bindings for humidity sensor
+  integration
 
 **Common Features:**
 
@@ -220,13 +220,13 @@ payload means available.
 
 ##### Add Relay
 
-Enter a name to create a new relay. This creates a RELAY binding that can be
+Enter a name to create a new relay. This creates a `RELAY` binding that can be
 connected to other Control4 devices or used in programming. The relay supports
 ON, OFF, TOGGLE, and TRIGGER commands.
 
 ##### Add Contact
 
-Enter a name to create a new contact sensor. This creates a CONTACT_SENSOR
+Enter a name to create a new contact sensor. This creates a `CONTACT_SENSOR`
 binding that reports OPEN or CLOSED state based on MQTT messages.
 
 ##### Add Button
@@ -260,11 +260,11 @@ Enter a name to create a new FLOAT variable.
 ##### Add Temperature Variable
 
 Enter a name to create a new TEMPERATURE variable. This creates a
-TEMPERATURE_VALUE binding that can be connected to thermostats.
+`TEMPERATURE_VALUE` binding that can be connected to thermostats.
 
 ##### Add Humidity Variable
 
-Enter a name to create a new HUMIDITY variable. This creates a HUMIDITY_VALUE
+Enter a name to create a new HUMIDITY variable. This creates a `HUMIDITY_VALUE`
 binding that can be connected to humidity sensors.
 
 #### Manage Items
