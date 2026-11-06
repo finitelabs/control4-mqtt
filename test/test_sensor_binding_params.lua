@@ -9,8 +9,7 @@
 -- The helpers' own behavior is covered by test_sensor_params.lua. What is
 -- checked here is the call site: a thermostat bound to a sensor reads the
 -- temperature from CELSIUS and never looks at VALUE or SCALE, and crashes when
--- TIMESTAMP is absent, so the {VALUE, SCALE} payload this entity used to send
--- could not be ingested at all.
+-- TIMESTAMP is absent, so a payload of only VALUE and SCALE can't be read.
 --
 -- Regression test for DRV-121.
 
@@ -72,9 +71,8 @@ T.eq("FAHRENHEIT is converted alongside", celsius.params.FAHRENHEIT, 70.7)
 T.section("a Fahrenheit sensor keeps VALUE in the scale it measured")
 --------------------------------------------------------------------------------
 
--- The scale is per-item configuration, so rewriting VALUE to Celsius would
--- change the number every already-bound consumer reads. CELSIUS is added
--- alongside instead, which is what makes this change additive.
+-- The scale is per-item configuration, so VALUE stays in it for consumers that
+-- read VALUE, and CELSIUS goes alongside for those that read Celsius.
 local fahrenheit = sendAndCapture(temperatureItem("Fahrenheit"), 70.7)
 
 T.eq("VALUE is left as measured", fahrenheit.params.VALUE, 70.7)
