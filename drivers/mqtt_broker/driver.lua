@@ -29,8 +29,6 @@ local driverFilenames = require("lib.driver-filenames")
 --#endif
 
 local MQTT_BROKER_BINDING = 5001
--- The wait between attempts doubles from the floor to the cap; the cap keeps a
--- broker that stays down retried every 30 s.
 local RECONNECT_MIN_MS = 2 * ONE_SECOND
 local RECONNECT_MAX_MS = 30 * ONE_SECOND
 -- Only a session that lasted this long starts the waits from the floor again, so
