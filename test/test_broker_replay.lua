@@ -13,6 +13,7 @@
 require("c4_shim")
 require("drivers-common-public.global.timer")
 local T = require("testlib")
+local F = require("c4_fixtures")
 
 local ROOT = (debug.getinfo(1, "S").source:match("@(.*[/\\])") or "./") .. "../"
 local CHILD = 900
@@ -28,27 +29,6 @@ function C4:GetDriverConfigInfo(section)
     return "3.3.0"
   end
   return configInfo(self, section)
-end
-
---- Runs `path` as the open-source build compiles it: the DriverCentral lines are blanked.
---- @param path string
-local function dofileOpenSource(path)
-  local f = assert(io.open(path))
-  local lines, stack, including = {}, {}, true
-  for line in f:lines() do
-    local ifdef, name = line:match("^%s*%-%-%s*#(ifn?def)%s+([%w_]+)%s*$")
-    if ifdef then
-      stack[#stack + 1] = including
-      including = including and (name == "DRIVERCENTRAL") == (ifdef == "ifndef")
-    elseif line:match("^%s*%-%-%s*#else%s*$") then
-      including = stack[#stack] and not including
-    elseif line:match("^%s*%-%-%s*#endif%s*$") then
-      including = table.remove(stack)
-    end
-    lines[#lines + 1] = including and line or ""
-  end
-  f:close()
-  return assert(load(table.concat(lines, "\n"), "@" .. path))()
 end
 
 local client
@@ -103,7 +83,7 @@ Properties = {
   ["Driver Status"] = "",
   ["Driver Version"] = "",
 }
-dofileOpenSource(ROOT .. "drivers/mqtt_broker/driver.lua")
+F.dofileBuild(ROOT .. "drivers/mqtt_broker/driver.lua", "oss")
 OnDriverInit()
 OnDriverLateInit("DIT_STARTUP")
 
