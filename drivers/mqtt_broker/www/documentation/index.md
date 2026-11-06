@@ -110,7 +110,7 @@ for setting it up.
    [DriverCentral](https://drivercentral.io/platforms/control4-drivers/utility/mqtt).
 
 1. Extract and
-   [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
+   [install](https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)
    the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
 
 1. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
@@ -146,7 +146,7 @@ for setting it up.
    [Github](https://github.com/finitelabs/control4-mqtt/releases/latest).
 
 1. Extract and
-   [install](<(https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)>)
+   [install](https://www.control4.com/help/c4/software/cpro/dealer-composer-help/content/composerpro_userguide/adding_drivers_manually.htm)
    the `mqtt_broker.c4z` and `mqtt_universal.c4z` drivers.
 
 1. Use the "Search" tab to find the "MQTT Broker" driver and add it to your
