@@ -72,10 +72,13 @@ function MqttContact:_processValue(value, rawPayload)
 end
 
 --- Update the contact state and notify binding.
+--- The first state heard since start or a broker rebind is what the contact
+--- already was, so it is sent silently.
 --- @param isOpen boolean The new state (true = open).
 --- @param payload string|nil The raw payload (for display).
 --- @return boolean changed Whether the state changed.
 function MqttContact:_updateState(isOpen, payload)
+  local eventful = self._state ~= nil
   local changed = self._state ~= isOpen
   self._state = isOpen
 
@@ -91,13 +94,27 @@ function MqttContact:_updateState(isOpen, payload)
   -- Notify binding
   local binding = bindings:getDynamicBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
   if binding then
-    local bindingState = isOpen and "OPENED" or "CLOSED"
-    log:debug("Sending contact state %s to binding %s", bindingState, binding.bindingId)
-    SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
+    if eventful then
+      local bindingState = isOpen and "OPENED" or "CLOSED"
+      log:debug("Sending contact state %s to binding %s", bindingState, binding.bindingId)
+      SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
+    else
+      self:_sendCurrentState(binding.bindingId)
+    end
   end
 
   log:info("Contact '%s' state: %s", self:getName(), stateText)
   return true
+end
+
+--- Tell the bound contact driver the current state without firing its programming.
+--- Sends nothing while the state is unknown.
+--- @param bindingId number The contact binding ID.
+function MqttContact:_sendCurrentState(bindingId)
+  if self._state == nil then
+    return
+  end
+  SendToProxy(bindingId, self._state and "STATE_OPENED" or "STATE_CLOSED", {}, "NOTIFY")
 end
 
 --- Register the contact binding and OBC handler.
@@ -124,9 +141,8 @@ function MqttContact:registerBinding()
   local entity = self
   OBC[binding.bindingId] = function(idBinding, _strClass, bIsBound, otherDeviceId, _otherBindingId)
     log:debug("OBC[%s] bIsBound=%s otherDeviceId=%s", idBinding, bIsBound, otherDeviceId)
-    if bIsBound and entity._state ~= nil then
-      local bindingState = entity._state and "OPENED" or "CLOSED"
-      SendToProxy(binding.bindingId, bindingState, {}, "NOTIFY")
+    if bIsBound then
+      entity:_sendCurrentState(binding.bindingId)
     end
   end
 
