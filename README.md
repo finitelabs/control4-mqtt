@@ -208,6 +208,22 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Removed
 -->
 
+## v20261106 - 2026-11-06
+
+### Fixed
+
+- Fixed an MQTT Universal relay item running the bound relay's programming each
+  time the controller restarted or the relay was bound. Programming now runs
+  only when the relay opens or closes.
+- Fixed MQTT Universal declaring its events again too early in its startup,
+  which could leave an event item missing from Programming after a controller
+  reboot until the driver was reloaded.
+- Fixed automatic updates sometimes leaving an MQTT driver a version behind.
+  Each driver now updates in turn.
+- Fixed changing Automatic Updates or Update Channel on an MQTT driver briefly
+  holding up every other MQTT driver, longer in a project with many, while the
+  change was copied to them.
+
 ## v20261024 - 2026-10-24
 
 ### Fixed

@@ -18,9 +18,9 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Removed
 -->
 
-<!-- #ifdef DRIVERCENTRAL -->
+## v20261106 - 2026-11-06
 
-## Unreleased
+<!-- #ifdef DRIVERCENTRAL -->
 
 ### Added
 
@@ -32,25 +32,38 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   Labs an hourly report of the driver's memory use and a report of each error it
   hits; the documentation says what they hold.
 
+<!-- #endif -->
+
 ### Fixed
 
-- Fixed a licensed MQTT Broker staying disconnected until Reconnect when it lost
-  the broker while the DriverCentral Cloud driver was not answering. It now
-  reconnects on its usual retry.
-- Fixed an MQTT Universal relay item running the bound relay's programming every
-  time the controller restarted. Programming now runs only when the relay opens
-  or closes.
+- Fixed an MQTT Universal relay item running the bound relay's programming each
+  time the controller restarted or the relay was bound. Programming now runs
+  only when the relay opens or closes.
 - Fixed MQTT Universal declaring its events again too early in its startup,
   which could leave an event item missing from Programming after a controller
   reboot until the driver was reloaded.
+  <!-- #ifdef DRIVERCENTRAL -->
+- Fixed a licensed MQTT Broker staying disconnected until Reconnect when it lost
+  the broker while the DriverCentral Cloud driver was not answering. It now
+  reconnects on its usual retry.
+  <!-- #endif -->
+  <!-- #ifndef DRIVERCENTRAL -->
+- Fixed automatic updates sometimes leaving an MQTT driver a version behind.
+  Each driver now updates in turn.
+- Fixed changing Automatic Updates or Update Channel on an MQTT driver briefly
+  holding up every other MQTT driver, longer in a project with many, while the
+  change was copied to them.
+  <!-- #endif -->
+
+<!-- #ifdef DRIVERCENTRAL -->
 
 ### Changed
 
-- Automatic Updates now syncs across all MQTT Broker and MQTT Universal driver
-  instances.
-- Without an active license or trial, the MQTT Broker disconnects five minutes
-  after it loads and shows `No active license`. It connects again as soon as a
-  license is active, with no Reconnect needed.
+- Changed Automatic Updates to one setting for the MQTT Broker and MQTT
+  Universal drivers: changing it on any of them now changes it on all of them.
+- Without an active license or trial, the MQTT Broker now disconnects five
+  minutes after it loads and shows `No active license`. It connects again as
+  soon as a license is active, with no Reconnect needed.
 
 <!-- #endif -->
 
