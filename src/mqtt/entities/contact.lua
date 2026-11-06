@@ -60,6 +60,17 @@ function MqttContact:getStateText()
   return self._state and "Open" or "Closed"
 end
 
+--- The item's state variable.
+--- @return string[] names
+function MqttContact:getVariableNames()
+  return { self:getStateVarName() }
+end
+
+--- Create the state variable, empty, unless it exists.
+function MqttContact:seedVariables()
+  self:_seedVariable(self:getStateVarName(), "STRING")
+end
+
 --- Process the extracted value and update state.
 --- @param value string The extracted value.
 --- @param rawPayload string The original raw payload.

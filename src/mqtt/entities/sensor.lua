@@ -69,6 +69,12 @@ function MqttSensor:getTemperatureScale()
   return scale == "Fahrenheit" and "FAHRENHEIT" or "CELSIUS"
 end
 
+--- The item's reading variable, created at its first reading.
+--- @return string[] names
+function MqttSensor:getVariableNames()
+  return { self:getName() }
+end
+
 --- Process the extracted value and update the sensor.
 --- @param value string The extracted value.
 --- @param rawPayload string The original raw payload.

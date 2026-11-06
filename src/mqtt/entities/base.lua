@@ -11,6 +11,7 @@
 --- @field _state any Cached parsed state (type varies by entity).
 
 local log = require("lib.logging")
+local values = require("lib.values")
 local stateParser = require("mqtt.state_parser")
 
 local MqttEntity = {
@@ -205,6 +206,33 @@ end
 function MqttEntity:_processValue(value, rawPayload, retained)
   -- Base implementation does nothing
   return false
+end
+
+--- The names of the variables the item owns. None by default.
+--- @return string[] names
+function MqttEntity:getVariableNames()
+  return {}
+end
+
+--- Create the item's variables that don't exist yet, so programming can use them before the first message.
+--- Override in subclass.
+function MqttEntity:seedVariables() end
+
+--- Delete the item's variables.
+function MqttEntity:deleteVariables()
+  for _, name in ipairs(self:getVariableNames()) do
+    values:delete(name)
+  end
+end
+
+--- Create a read-only variable, empty, unless it exists.
+--- @param name string The variable name.
+--- @param varType string The variable type.
+function MqttEntity:_seedVariable(name, varType)
+  local stored = values:getValue(name)
+  if stored == nil or stored.deleted then
+    values:update(name, "", varType)
+  end
 end
 
 --- Reset the entity's cached state.

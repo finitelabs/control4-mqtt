@@ -73,6 +73,17 @@ function MqttRelay:getStateText()
   return self._state and "On" or "Off"
 end
 
+--- The item's state variable.
+--- @return string[] names
+function MqttRelay:getVariableNames()
+  return { self:getStateVarName() }
+end
+
+--- Create the state variable, empty, unless it exists.
+function MqttRelay:seedVariables()
+  self:_seedVariable(self:getStateVarName(), "STRING")
+end
+
 --- Process the extracted value and update state.
 --- @param value string The extracted value.
 --- @param rawPayload string The original raw payload.

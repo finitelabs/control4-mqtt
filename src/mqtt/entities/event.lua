@@ -86,6 +86,17 @@ function MqttEvent:getStateText()
   return self._state or ""
 end
 
+--- The item's state variable.
+--- @return string[] names
+function MqttEvent:getVariableNames()
+  return { self:getStateVarName() }
+end
+
+--- Create the state variable, empty, unless it exists.
+function MqttEvent:seedVariables()
+  self:_seedVariable(self:getStateVarName(), "STRING")
+end
+
 --- Process the extracted value and trigger event/binding.
 --- @param value string The extracted value (event type).
 --- @param rawPayload string The original raw payload.

@@ -267,10 +267,8 @@ local function addItem(name, itemType)
     return tostring(itemId)
   end
 
-  -- Register binding if applicable
   entity:registerBinding()
-
-  -- Register variable for variable types
+  entity:seedVariables()
   if MqttVariable.isVariableType(itemType) then
     entity:registerVariable()
   end
@@ -297,18 +295,8 @@ local function deleteItem(itemId)
     local deviceId = tostring(C4:GetDeviceID())
     entity:unsubscribe(deviceId)
 
-    -- Unregister binding
     entity:unregisterBinding()
-
-    -- Delete variable for variable types
-    if MqttVariable.isVariableType(item.itemType) then
-      entity:deleteVariable()
-    end
-
-    -- Delete state variable for relays, contacts, and events
-    if item.itemType == "RELAY" or item.itemType == "CONTACT" or item.itemType == "EVENT" then
-      values:delete(entity:getStateVarName())
-    end
+    entity:deleteVariables()
 
     -- Destroy entity
     destroyEntity(itemId)
@@ -591,10 +579,8 @@ local function restoreItems()
   for itemId, item in pairs(getItems()) do
     local entity = createEntity(item)
     if entity then
-      -- Restore binding and handlers
       entity:registerBinding()
-
-      -- Re-register variable callbacks
+      entity:seedVariables()
       if MqttVariable.isVariableType(item.itemType) then
         local currentValue = values:getValue(item.name)
         local value = currentValue and currentValue.value or ""

@@ -117,10 +117,10 @@ function MqttVariable:registerVariable(initialValue)
   log:debug("Registered variable '%s' (type=%s, value=%s)", self:getName(), self.variableType, value)
 end
 
---- Delete the C4 variable.
-function MqttVariable:deleteVariable()
-  values:delete(self:getName())
-  log:debug("Deleted variable '%s'", self:getName())
+--- The item's variable.
+--- @return string[] names
+function MqttVariable:getVariableNames()
+  return { self:getName() }
 end
 
 --- Variables don't have bindings.
