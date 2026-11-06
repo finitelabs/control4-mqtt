@@ -108,11 +108,11 @@ integration with any MQTT-based system.
 
 #### Cloud Settings
 
-##### Cloud Status
+##### Cloud Status (read-only)
 
 Displays the DriverCentral cloud license status.
 
-##### Automatic Updates
+##### Automatic Updates \[ Off | **_On_** \]
 
 Turns on/off the DriverCentral cloud automatic updates. Changing it on any MQTT
 Broker or MQTT Universal item changes it on all of them.
@@ -129,9 +129,9 @@ Displays the current status of the driver.
 
 Displays the current version of the driver.
 
-##### Log Level \[ Fatal | Error | Warning | **_Info_** | Debug | Trace | Ultra \]
+##### Log Level \[ 0 - Fatal | 1 - Error | 2 - Warning | **_3 - Info_** | 4 - Debug | 5 - Trace | 6 - Ultra \]
 
-Sets the logging level. Default is `Info`.
+Sets the logging level. Default is `3 - Info`.
 
 ##### Log Mode \[ **_Off_** | Print | Log | Print and Log \]
 
@@ -255,14 +255,22 @@ binding that can be connected to humidity sensors.
 
 #### Manage Items
 
-##### Remove Item
+These properties are shown only once the driver has at least one item. Each
+entry in their lists reads `Name (TYPE) [ID]`.
 
-Select an item from the list to delete it. Format: `Name (TYPE) [ID]`
+##### Remove Item \[ **_(Select)_** | *added items...* \]
 
-##### Configure Item
+> ⚠️ Removing an item also removes its connection and the bindings made to it.
+> Removing an event item also removes its event and the programming on it.
 
-Select an item from the list to configure its MQTT settings. When selected, the
-Item Configuration properties will appear below.
+Selects an item to remove. The variables of a relay, contact, event, string,
+bool, number or float item are removed with it.
+
+##### Configure Item \[ **_(Select)_** | *added items...* \]
+
+Selects an item to show its settings under
+[Item Configuration](#item-configuration). A new item is selected here when you
+add it.
 
 #### Item Configuration
 
