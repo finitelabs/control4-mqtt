@@ -308,6 +308,13 @@ local function routeMessageToSubscribers(topic, payload, qos, retain)
   end
 end
 
+--- Arms the next connect attempt.
+local function scheduleReconnect()
+  SetTimer("reconnect", 30 * ONE_SECOND, function()
+    connect()
+  end)
+end
+
 --- The client's connect callback.
 --- @param client userdata The client that called back.
 --- @param reasonCode integer 0 when the broker accepted the connection.
@@ -338,10 +345,7 @@ local function onConnect(client, reasonCode, _flags, message)
     local errorMessage = message or client:ReasonCodeToString(reasonCode) or "unknown"
     updateStatus("Connect failed: " .. errorMessage)
     log:error("MQTT connection failed: %s", errorMessage)
-
-    SetTimer("reconnect", 30 * ONE_SECOND, function()
-      connect()
-    end)
+    scheduleReconnect()
   end
 end
 
@@ -366,9 +370,7 @@ local function onDisconnect(client, reasonCode, message)
     updateStatus("Disconnected")
   elseif wasConnected or wasConnecting then
     updateStatus(wasConnected and "Disconnected: " .. reason .. " (retrying)" or "Connect failed: " .. reason)
-    SetTimer("reconnect", 30 * ONE_SECOND, function()
-      connect()
-    end)
+    scheduleReconnect()
   end
   -- Otherwise it ends a refused connect, which onConnect has reported and retries.
 end
@@ -462,7 +464,15 @@ connect = function()
   local keepAlive = tonumber(Properties["Keep Alive"]) or 60
   log:info("Connecting to MQTT broker at %s:%s (keepAlive=%s)", brokerAddress, port, keepAlive)
   connecting = true
-  mqttClient:Connect(brokerAddress, port, keepAlive)
+  -- An error here, such as a host name that doesn't resolve, gets no callback.
+  local result, err = mqttClient:Connect(brokerAddress, port, keepAlive)
+  if result ~= nil and result ~= 0 then
+    connecting = false
+    local reason = not IsEmpty(err) and err or mqttClient:ErrorCodeToString(result) or tostring(result)
+    log:error("MQTT connect failed: %s", reason)
+    updateStatus("Connect failed: " .. reason)
+    scheduleReconnect()
+  end
 end
 
 -----------------------------------------------------------------------

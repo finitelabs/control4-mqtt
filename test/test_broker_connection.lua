@@ -7,7 +7,8 @@
 --   ./test/run_test.sh test_broker_connection.lua
 --
 -- The fake client answers Connect and Disconnect later, as the real one does. A broker that refuses a connection
--- closes it after its refusal, and one that never answers just closes it.
+-- closes it after its refusal, one that never answers just closes it, and a host name that doesn't resolve fails
+-- Connect itself with no callback.
 
 require("c4_shim")
 require("drivers-common-public.global.timer")
@@ -33,6 +34,8 @@ function C4:UpdateProperty(name, value)
 end
 
 local broker = { up = true, answers = true }
+-- What Connect returns when the host name doesn't resolve; nil when it does.
+local lookupError
 local queued = {}
 function C4:MQTT()
   local client = { cb = {} }
@@ -44,6 +47,9 @@ function C4:MQTT()
   function client:SetUsernameAndPassword() end
   function client:Connect()
     broker.client = self
+    if lookupError then
+      return unpack(lookupError)
+    end
     local up, answers = broker.up, broker.answers
     queued[#queued + 1] = function()
       if not answers then
@@ -228,5 +234,22 @@ T.eq("an attempt the broker never answers says why", Properties["Driver Status"]
 broker.answers = true
 T.truthy("and is retried", retry())
 T.eq("until it connects", Properties["Driver Status"], "Connected")
+
+--------------------------------------------------------------------------------
+T.section("a broker host name that doesn't resolve says why and is retried")
+--------------------------------------------------------------------------------
+
+lookupError = { 15, "Lookup error" }
+Properties["Broker Address"] = "broker.invalid"
+OnPropertyChanged("Broker Address")
+answer()
+T.eq("with the client's description", Properties["Driver Status"], "Connect failed: Lookup error")
+T.truthy("a retry is armed", retry())
+lookupError = { 15 }
+retry()
+T.eq("or the error code's meaning", Properties["Driver Status"], "Connect failed: error 15")
+lookupError = nil
+T.truthy("and it connects once the name resolves", retry())
+T.eq("Driver Status", Properties["Driver Status"], "Connected")
 
 T.finish()
