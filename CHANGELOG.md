@@ -20,10 +20,11 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 
 ## v20261106 - 2026-11-06
 
-<!-- #ifdef DRIVERCENTRAL -->
-
 ### Added
 
+- Added a `Reconnect` command to the MQTT Broker, so Control4 programming can
+  reconnect it to the broker the same way as the `Reconnect` action.
+  <!-- #ifdef DRIVERCENTRAL -->
 - Added a `Support Code` property to the MQTT Broker and MQTT Universal drivers.
   A code from Finite Labs support opens the driver's Lua tab in Composer for an
   hour; leave it blank otherwise.
@@ -31,8 +32,7 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   `Diagnostics Snapshot` action to every driver. Cloud Monitoring sends Finite
   Labs an hourly report of the driver's memory use and a report of each error it
   hits; the documentation says what they hold.
-
-<!-- #endif -->
+  <!-- #endif -->
 
 ### Fixed
 
@@ -51,6 +51,19 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   when a new message arrives.
 - Fixed the MQTT Broker printing its password to the Lua output when debug
   printing was on.
+- Fixed the MQTT Broker waiting 30 seconds to reconnect after every drop. It now
+  tries again 2 seconds after a drop and waits longer after each failed attempt,
+  up to 30 seconds.
+- Fixed the MQTT Broker staying at `Connecting...` with no retry when its
+  `Broker Address` did not resolve, and showing a bare `Disconnected` while it
+  retried. `Driver Status` now shows why the connection dropped or failed, and
+  the driver retries.
+- Fixed the MQTT Broker's Broker Disconnected event firing again at each failed
+  retry while the broker stayed down, and not firing when a Reconnect or a
+  settings change closed a live connection. Broker Connected and Broker
+  Disconnected now fire only when the connection changes.
+- Fixed updating or removing the MQTT Broker leaving its old connection to the
+  broker open.
   <!-- #ifdef DRIVERCENTRAL -->
 - Fixed a licensed MQTT Broker staying disconnected until Reconnect when it lost
   the broker while the DriverCentral Cloud driver was not answering. It now
