@@ -296,6 +296,30 @@ for _ = 1, 2 do
 end
 T.eq("sessions that end at once keep the waits growing", waits, { 4000, 8000 })
 
+broker.up = false
+for _ = 1, 4 do
+  retry()
+end
+broker.up = true
+retry()
+T.eq("the waits are back at the cap", Properties["Driver Status"], "Connected")
+waits = {}
+now = now + 600
+broker.up = false
+EC.Reconnect()
+answer()
+T.eq("a Reconnect after a session that lasted starts the waits over", waits, { 2000 })
+broker.up = true
+retry()
+
+--------------------------------------------------------------------------------
+T.section("a refusal with no message says the reason code's meaning")
+--------------------------------------------------------------------------------
+
+broker.client.cb.OnConnect(broker.client, 5, 0, "")
+T.eq("rather than nothing", Properties["Driver Status"], "Connect failed: reason 5")
+retry()
+
 --------------------------------------------------------------------------------
 T.section("Reconnect is a programming command as well as an action")
 --------------------------------------------------------------------------------

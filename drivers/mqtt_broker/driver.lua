@@ -376,7 +376,7 @@ local function onConnect(client, reasonCode, _flags, message)
     end
     setConnected(true)
   else
-    local errorMessage = message or client:ReasonCodeToString(reasonCode) or "unknown"
+    local errorMessage = not IsEmpty(message) and message or client:ReasonCodeToString(reasonCode) or "unknown"
     updateStatus("Connect failed: " .. errorMessage)
     log:error("MQTT connection failed: %s", errorMessage)
     scheduleReconnect()
@@ -455,7 +455,11 @@ connect = function()
   end
 
   CancelTimer("reconnect")
-  -- The replaced client's own disconnect is ignored as stale, so the change is told here.
+  -- The replaced client's own disconnect is ignored as stale, so the change is told
+  -- and a session that lasted starts the waits over here.
+  if isBrokerConnected and os.time() - connectedAt >= STABLE_SESSION_S then
+    reconnectDelay = RECONNECT_MIN_MS
+  end
   setConnected(false)
   dropClient()
 
