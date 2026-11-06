@@ -32,6 +32,8 @@ local MQTT_BROKER_BINDING = 5001
 
 local mqttClient = nil
 local isBrokerConnected = false
+-- Whether the client's connect attempt is still waiting for the broker's answer.
+local connecting = false
 -- What bound items were last told; unknown at load, since after a driver update
 -- they may still think the broker is connected.
 local itemsToldConnected = nil
@@ -319,6 +321,7 @@ local function onConnect(client, reasonCode, _flags, message)
     return
   end
   log:info("MQTT:OnConnect reasonCode=%s message=%s", reasonCode, message or "")
+  connecting = false
   if reasonCode == 0 then
     -- A reconnect armed before this session came up would tear it down
     CancelTimer("reconnect")
@@ -345,24 +348,29 @@ end
 --- The client's disconnect callback.
 --- @param client userdata The client that called back.
 --- @param reasonCode integer 0 for a clean close.
-local function onDisconnect(client, reasonCode)
+--- @param message? string What the reason code means.
+local function onDisconnect(client, reasonCode, message)
   -- Same stale-client guard as onConnect: the replaced client's own Disconnect() lands here.
   if client ~= mqttClient then
     log:debug("Ignoring stale OnDisconnect from replaced client")
     return
   end
-  local reasonString = client:ReasonCodeToString(reasonCode) or "unknown"
-  log:warn("MQTT:OnDisconnect reasonCode=%s - %s", reasonCode, reasonString)
+  local reason = not IsEmpty(message) and message or client:ReasonCodeToString(reasonCode) or "unknown"
+  log:warn("MQTT:OnDisconnect reasonCode=%s - %s", reasonCode, reason)
+  local wasConnected, wasConnecting = isBrokerConnected, connecting
+  connecting = false
   setConnected(false)
-  updateStatus("Disconnected")
-
-  -- A server's clean close (reasonCode 0) isn't retried, so a broker that
-  -- closes the connection on purpose isn't hammered.
-  if reasonCode ~= 0 then
+  if reasonCode == 0 then
+    -- A server's clean close isn't retried, so a broker that closes the
+    -- connection on purpose isn't hammered.
+    updateStatus("Disconnected")
+  elseif wasConnected or wasConnecting then
+    updateStatus(wasConnected and "Disconnected: " .. reason .. " (retrying)" or "Connect failed: " .. reason)
     SetTimer("reconnect", 30 * ONE_SECOND, function()
       connect()
     end)
   end
+  -- Otherwise it ends a refused connect, which onConnect has reported and retries.
 end
 
 --- The client's message callback.
@@ -416,6 +424,7 @@ connect = function()
     mqttClient:Disconnect()
     mqttClient = nil
   end
+  connecting = false
 
   local brokerAddress = Properties["Broker Address"]
   local port = tonumber(Properties["Port"]) or 1883
@@ -452,6 +461,7 @@ connect = function()
   updateStatus("Connecting...")
   local keepAlive = tonumber(Properties["Keep Alive"]) or 60
   log:info("Connecting to MQTT broker at %s:%s (keepAlive=%s)", brokerAddress, port, keepAlive)
+  connecting = true
   mqttClient:Connect(brokerAddress, port, keepAlive)
 end
 

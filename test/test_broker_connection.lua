@@ -6,8 +6,8 @@
 -- or:
 --   ./test/run_test.sh test_broker_connection.lua
 --
--- The fake client answers Connect and Disconnect later, as the real one does, and a broker that refuses a connection
--- closes it after its refusal.
+-- The fake client answers Connect and Disconnect later, as the real one does. A broker that refuses a connection
+-- closes it after its refusal, and one that never answers just closes it.
 
 require("c4_shim")
 require("drivers-common-public.global.timer")
@@ -32,7 +32,7 @@ function C4:UpdateProperty(name, value)
   Properties[name] = value
 end
 
-local broker = { up = true }
+local broker = { up = true, answers = true }
 local queued = {}
 function C4:MQTT()
   local client = { cb = {} }
@@ -44,8 +44,12 @@ function C4:MQTT()
   function client:SetUsernameAndPassword() end
   function client:Connect()
     broker.client = self
-    local up = broker.up
+    local up, answers = broker.up, broker.answers
     queued[#queued + 1] = function()
+      if not answers then
+        self.cb.OnDisconnect(self, 14, "connection refused")
+        return
+      end
       self.cb.OnConnect(self, up and 0 or 5, 0, up and "" or "not authorized")
       if not up then
         self.cb.OnDisconnect(self, 5, "")
@@ -98,8 +102,9 @@ local function retry()
 end
 
 --- The broker drops the session uncleanly.
-local function drop()
-  broker.client.cb.OnDisconnect(broker.client, 7, "connection lost")
+--- @param message? string
+local function drop(message)
+  broker.client.cb.OnDisconnect(broker.client, 7, message or "connection lost")
 end
 
 --- What BROKER_CONNECTED says.
@@ -191,5 +196,37 @@ retry()
 T.eq("Broker Connected once it is back", fired, { "Broker Disconnected", "Broker Connected" })
 T.eq("bound items hear each change once", told, { "BROKER_DISCONNECTED", "BROKER_CONNECTED" })
 T.eq("BROKER_CONNECTED reads Connected", reads(), "Connected")
+
+--------------------------------------------------------------------------------
+T.section("Driver Status says why a session dropped, and that it is retrying")
+--------------------------------------------------------------------------------
+
+drop()
+T.eq("with the client's message", Properties["Driver Status"], "Disconnected: connection lost (retrying)")
+T.truthy("a retry is armed", retry())
+drop("")
+T.eq("or the reason code's meaning", Properties["Driver Status"], "Disconnected: reason 7 (retrying)")
+retry()
+
+broker.client.cb.OnDisconnect(broker.client, 0, "")
+T.eq("a server's clean close is a plain Disconnected", Properties["Driver Status"], "Disconnected")
+T.falsy("and is not retried", retry())
+
+--------------------------------------------------------------------------------
+T.section("a failed connect says why, and keeps saying it after the broker closes the connection")
+--------------------------------------------------------------------------------
+
+broker.up = false
+EC.Reconnect()
+answer()
+T.eq("a refusal keeps its reason", Properties["Driver Status"], "Connect failed: not authorized")
+T.truthy("and is retried", retry())
+
+broker.up, broker.answers = true, false
+retry()
+T.eq("an attempt the broker never answers says why", Properties["Driver Status"], "Connect failed: connection refused")
+broker.answers = true
+T.truthy("and is retried", retry())
+T.eq("until it connects", Properties["Driver Status"], "Connected")
 
 T.finish()
