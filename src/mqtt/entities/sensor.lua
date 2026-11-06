@@ -11,7 +11,7 @@ local values = require("lib.values")
 local MqttEntity = require("mqtt.entities.base")
 
 --- Sensor type configurations.
---- @type table<string, {bindingClass: string, scale: string, c4VarType: string}>
+--- @type table<string, {bindingClass: string, c4VarType: string}>
 local SENSOR_TYPES = {
   TEMPERATURE = {
     bindingClass = "TEMPERATURE_VALUE",
@@ -19,7 +19,6 @@ local SENSOR_TYPES = {
   },
   HUMIDITY = {
     bindingClass = "HUMIDITY_VALUE",
-    scale = "PERCENT",
     c4VarType = "FLOAT",
   },
 }
@@ -175,13 +174,6 @@ end
 function MqttSensor:unregisterBinding()
   bindings:deleteBinding(self.BINDINGS_NAMESPACE, self:getBindingKey())
   log:debug("Unregistered binding for sensor '%s'", self:getName())
-end
-
---- Check if this is a supported sensor type.
---- @param itemType string The item type to check.
---- @return boolean
-function MqttSensor.isSensorType(itemType)
-  return SENSOR_TYPES[itemType] ~= nil
 end
 
 return MqttSensor

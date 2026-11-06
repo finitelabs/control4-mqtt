@@ -1,27 +1,11 @@
---- Constants used throughout the MQTT driver.
+--- Constants used throughout the driver.
 
 return {
-  --- Constant for showing a property in the UI.
+  --- Show a property in the Composer UI.
   --- @type number
   SHOW_PROPERTY = 0,
 
-  --- Constant for hiding a property in the UI.
+  --- Hide a property in the Composer UI.
   --- @type number
   HIDE_PROPERTY = 1,
-
-  --- Constant for button action IDs.
-  --- @type table<string, integer>
-  ButtonIds = {
-    TOP = 0,
-    BOTTOM = 1,
-    TOGGLE = 2,
-  },
-
-  --- Constant for button action types.
-  --- @type table<string, integer>
-  ButtonActions = {
-    RELEASE_HOLD = 0,
-    PRESS = 1,
-    RELEASE_CLICK = 2,
-  },
 }

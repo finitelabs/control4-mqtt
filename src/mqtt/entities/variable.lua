@@ -20,9 +20,6 @@ local VARIABLE_TYPES = {
 
 local MqttVariable = setmetatable({
   TYPE = "VARIABLE",
-  BINDING_CLASS = nil, -- Variables don't have bindings
-  BINDING_TYPE = nil,
-  BINDINGS_NAMESPACE = "MqttVariable",
 }, { __index = MqttEntity })
 
 --- Create a new variable entity instance.
@@ -42,18 +39,6 @@ function MqttVariable:new(item, brokerBinding)
   end
 
   return instance
-end
-
---- Get the C4 variable type for this variable.
---- @return string|nil
-function MqttVariable:getVariableType()
-  return self.variableType
-end
-
---- Get the default value for this variable type.
---- @return string
-function MqttVariable:getDefaultValue()
-  return self.defaultValue or ""
 end
 
 --- Process the extracted value and update the variable.

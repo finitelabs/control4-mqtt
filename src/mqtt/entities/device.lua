@@ -18,7 +18,6 @@ local EVENTS_NAMESPACE = "MQTTUniversal"
 local AVAILABILITY_VARIABLE = "Availability Status"
 
 local MqttDevice = {
-  TYPE = "DEVICE",
   brokerBinding = nil,
   _connected = false,
   _available = nil,
@@ -63,18 +62,6 @@ function MqttDevice:refreshStatus()
     status = "Device unavailable"
   end
   UpdateProperty("Driver Status", status)
-end
-
---- Check if the device is available.
---- @return boolean|nil nil = unknown, true = available, false = unavailable.
-function MqttDevice:isAvailable()
-  return self._available
-end
-
---- Get the last availability payload.
---- @return string|nil
-function MqttDevice:getLastAvailabilityPayload()
-  return self._lastAvailabilityPayload
 end
 
 --- Parse availability from payload using "match one, default other" logic.
