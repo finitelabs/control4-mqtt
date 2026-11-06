@@ -195,6 +195,12 @@
       </action>
       <!-- #endif -->
     </actions>
+    <commands>
+      <command>
+        <name>Reconnect</name>
+        <description>Reconnect NAME to the MQTT broker</description>
+      </command>
+    </commands>
   </config>
   <connections>
     <connection>

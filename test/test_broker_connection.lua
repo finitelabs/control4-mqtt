@@ -297,6 +297,19 @@ end
 T.eq("sessions that end at once keep the waits growing", waits, { 4000, 8000 })
 
 --------------------------------------------------------------------------------
+T.section("Reconnect is a programming command as well as an action")
+--------------------------------------------------------------------------------
+
+local xmlFile = assert(io.open(ROOT .. "drivers/mqtt_broker/driver.xml"))
+local commands = xmlFile:read("*a"):match("<commands>(.-)</commands>") or ""
+xmlFile:close()
+T.truthy("driver.xml declares the command", commands:find("<name>Reconnect</name>", 1, true) ~= nil)
+reset()
+ExecuteCommand("Reconnect", {})
+answer()
+T.eq("and running it reconnects", fired, { "Broker Disconnected", "Broker Connected" })
+
+--------------------------------------------------------------------------------
 T.section("removing or updating the broker closes its connection and leaves nothing armed")
 --------------------------------------------------------------------------------
 
