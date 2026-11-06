@@ -239,6 +239,11 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   holding up every other MQTT driver, longer in a project with many, while the
   change was copied to them.
 
+### Changed
+
+- Changed MQTT Universal's Composer category from Misc to Utility, so it is
+  listed beside the MQTT Broker.
+
 ## v20261024 - 2026-10-24
 
 ### Fixed
