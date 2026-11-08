@@ -95,11 +95,7 @@ do
   local ok = startWithFailingProperty("drivercentral", "boom", "Enabled")
   diagnostics.captureError = nil
   T.check("OnDriverLateInit returns", ok)
-  T.eq(
-    "one error, with where it came from",
-    reported,
-    { { message = "boom", source = "OPC.Boom" } }
-  )
+  T.eq("one error, with where it came from", reported, { { message = "boom", source = "OPC.Boom" } })
 end
 
 T.finish()
