@@ -1,5 +1,5 @@
 -- MQTT Universal's start: what OnDriverLateInit does when a property's handler fails, by loading the driver as each
--- build compiles it and reading what is logged and reported.
+-- build compiles it and reading what is printed and reported.
 --
 -- Run from the driver root:
 --   make test
@@ -45,46 +45,43 @@ local function freshProperties(logLevel, logMode)
   Properties["Log Mode"] = logMode
 end
 
---- Load `build` and start it with OnPropertyChanged raising `message` for one property, "Boom".
+--- Load `build` and start it with the handler of one property, "Boom", raising `message`.
+--- @param build string
+--- @param message string
+--- @param monitoring? string Cloud Monitoring's value, "Disabled" unless given.
 --- @return boolean ok Whether OnDriverLateInit returned.
 --- @return string output What it printed.
-local function startWithFailingProperty(build, message)
+local function startWithFailingProperty(build, message, monitoring)
   freshProperties("1 - Error", "Print")
   Properties["Boom"] = ""
+  Properties["Cloud Monitoring"] = monitoring or "Disabled"
   F.dofileBuild(DRIVER, build)
-  local real = OnPropertyChanged
-  OnPropertyChanged = function(p)
-    if p == "Boom" then
-      error(message, 0)
-    end
-    return real(p)
+  OPC.Boom = function()
+    error(message, 0)
   end
   OnDriverInit()
   local ok, _, output = T.capture(function()
     OnDriverLateInit("DIT_STARTUP")
   end)
-  OnPropertyChanged = real
+  OPC.Boom = nil
   CancelTimer("LogMode")
   return ok, output
 end
 
 --------------------------------------------------------------------------------
-T.section("an error from a property at start is logged and the start carries on")
+T.section("an error from a property's handler at start is printed and the start carries on")
 --------------------------------------------------------------------------------
 
 do
   local ok, output = startWithFailingProperty("oss", "payload is 100%")
-  T.check("OnDriverLateInit returns, even with a % in the error", ok)
+  T.check("OnDriverLateInit returns", ok)
   T.eq("and the driver is initialized", gInitialized, true)
-  T.contains(
-    "the log names the property and keeps the error as written",
-    output,
-    "Error in OnPropertyChanged for property 'Boom': payload is 100%"
-  )
+  T.contains("the property dispatcher prints the error", output, "OnPropertyChanged error:")
+  T.contains("as written", output, "payload is 100%")
 end
 
 --------------------------------------------------------------------------------
-T.section("in a DriverCentral build it is also reported to Cloud Monitoring")
+T.section("in a DriverCentral build with Cloud Monitoring on it is also reported")
 --------------------------------------------------------------------------------
 
 do
@@ -93,14 +90,12 @@ do
   diagnostics.captureError = function(_, message, _, source)
     table.insert(reported, { message = message, source = source })
   end
-  local ok = startWithFailingProperty("drivercentral", "boom")
+  -- This build carries no server, so Cloud Monitoring is made available here.
+  diagnostics._available = true
+  local ok = startWithFailingProperty("drivercentral", "boom", "Enabled")
   diagnostics.captureError = nil
   T.check("OnDriverLateInit returns", ok)
-  T.eq(
-    "one error, with where it came from",
-    reported,
-    { { message = "boom", source = "MqttUniversal.OnPropertyChanged" } }
-  )
+  T.eq("one error, with where it came from", reported, { { message = "boom", source = "OPC.Boom" } })
 end
 
 T.finish()

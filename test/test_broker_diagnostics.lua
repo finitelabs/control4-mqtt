@@ -77,21 +77,20 @@ Properties = {
   ["Log Level"] = "3 - Info",
   ["Log Mode"] = "Off",
   ["Automatic Updates"] = "Off",
-  ["Cloud Monitoring"] = "Disabled",
+  ["Cloud Monitoring"] = "Enabled",
   ["Cloud Status"] = "",
   ["Driver Status"] = "",
   ["Driver Version"] = "",
 }
 F.dofileBuild(ROOT .. "drivers/mqtt_broker/driver.lua", "drivercentral")
 
--- The property dispatcher catches a handler's own error, so this one is raised in the dispatcher.
-local failDispatch = true
-local handlerDebug = HandlerDebug
-function HandlerDebug(init, ...)
-  if failDispatch and init[1] == "OnPropertyChanged: Driver_Version" then
-    error("dispatch failed")
+local failHandler = true
+local driverVersion = OPC.Driver_Version
+function OPC.Driver_Version(...)
+  if failHandler then
+    error("handler failed")
   end
-  return handlerDebug(init, ...)
+  return driverVersion(...)
 end
 
 local reported = {}
@@ -99,10 +98,12 @@ local diagnostics = require("lib.diagnostics")
 function diagnostics:captureError(message, _traceback, source)
   reported[#reported + 1] = { source = source, message = message }
 end
+-- This build carries no server, so Cloud Monitoring is made available here.
+diagnostics._available = true
 
 OnDriverInit()
 OnDriverLateInit("DIT_STARTUP")
-failDispatch = false
+failHandler = false
 
 --- The sources reported since `from`.
 local function sourcesSince(from)
@@ -114,11 +115,11 @@ local function sourcesSince(from)
 end
 
 --------------------------------------------------------------------------------
-T.section("an error the property replay catches during the late init is reported")
+T.section("an error in a property's handler during the late init is reported")
 --------------------------------------------------------------------------------
 
-T.eq("one report, from the property replay", sourcesSince(0), { "MQTTBroker.OnPropertyChanged" })
-T.truthy("with the error", reported[1] and reported[1].message:find("dispatch failed", 1, true) ~= nil)
+T.eq("one report, from the property dispatcher", sourcesSince(0), { "OPC.Driver_Version" })
+T.truthy("with the error", reported[1] and reported[1].message:find("handler failed", 1, true) ~= nil)
 T.eq("and the broker still connects", Properties["Driver Status"], "Connected")
 
 --------------------------------------------------------------------------------
