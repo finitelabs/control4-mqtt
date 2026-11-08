@@ -304,14 +304,14 @@ binding that can be connected to humidity sensors.
 These properties are shown only once the driver has at least one item. Each
 entry in their lists reads `Name (TYPE) [ID]`.
 
-##### Remove Item \[ **_(Select)_** | *added items...* \]
+##### Remove Item
 
 > ⚠️ Removing an item also removes its connection and the bindings made to it.
 > Removing an event item also removes its event and the programming on it.
 
 Selects an item to remove. The item's variables are removed with it.
 
-##### Configure Item \[ **_(Select)_** | *added items...* \]
+##### Configure Item
 
 Selects an item to show its settings under
 [Item Configuration](#item-configuration). A new item is selected here when you
@@ -320,8 +320,8 @@ add it.
 #### Item Configuration
 
 These properties are shown when an item is selected in
-[Configure Item](#configure-item--select--added-items-). Which ones appear
-depends on the item's type and on the topics it has.
+[Configure Item](#configure-item). Which ones appear depends on the item's type
+and on the topics it has.
 
 ##### State Topic
 
