@@ -23,8 +23,8 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 ### Changed
 
 - Changed Log Level in the DriverCentral build to stop at 4 - Debug, and to
-  offer 5 - Trace and 6 - Ultra only while Finite Labs support has the Lua tab
-  open.
+  offer 5 - Trace and 6 - Ultra only while a Support Code from Finite Labs
+  support has the Lua tab open.
 
 ## v20261106 - 2026-11-06
 
@@ -80,10 +80,6 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   and missing a drop caused by Reconnect or a settings change.
 - Fixed updating or removing the MQTT Broker leaving its old connection to the
   broker open.
-  <!-- #ifdef DRIVERCENTRAL -->
-- Fixed a licensed MQTT Broker staying disconnected until Reconnect when it lost
-  the broker while the DriverCentral Cloud driver was not answering.
-  <!-- #endif -->
   <!-- #ifndef DRIVERCENTRAL -->
 - Fixed automatic updates sometimes leaving an MQTT driver a version behind.
 - Fixed changing Automatic Updates or Update Channel on one MQTT driver briefly
@@ -97,8 +93,6 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
   <!-- #ifdef DRIVERCENTRAL -->
 - Changed Automatic Updates to one setting shared by every MQTT Broker and MQTT
   Universal driver in the project.
-- Changed the MQTT Broker to disconnect five minutes after it loads without an
-  active license or trial, and to connect again as soon as a license is active.
   <!-- #endif -->
 
 ## v20261024 - 2026-10-24
