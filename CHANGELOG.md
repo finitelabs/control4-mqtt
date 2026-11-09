@@ -20,11 +20,14 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 
 ## Unreleased
 
+<!-- #ifdef DRIVERCENTRAL -->
+
 ### Changed
 
-- Changed Log Level in the DriverCentral build to stop at 4 - Debug, and to
-  offer 5 - Trace and 6 - Ultra only while a Support Code from Finite Labs
-  support has the Lua tab open.
+- Changed Log Level in the DriverCentral build to stop at 4 - Debug unless a
+  Support Code from Finite Labs support has the Lua tab open.
+
+<!-- #endif -->
 
 ## v20261106 - 2026-11-06
 
