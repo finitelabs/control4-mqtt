@@ -322,12 +322,9 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 
 - Fixed MQTT Universal variables no longer taking Set Variable from programming
   after their first MQTT message.
-
 - Fixed MQTT Universal boolean variables not toggling reliably from programming.
-
 - Fixed MQTT Universal variables becoming read-only after a controller reboot or
   driver reload.
-
 - Fixed automatic driver updates stopping when the MQTT driver that ran them was
   removed from the project.
 

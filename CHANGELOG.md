@@ -24,8 +24,8 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 
 ### Changed
 
-- Changed Log Level in the DriverCentral build to stop at 4 - Debug unless a
-  Support Code from Finite Labs support has the Lua tab open.
+- Changed Log Level to stop at 4 - Debug unless a Support Code from Finite Labs
+  support has the Lua tab open.
 
 <!-- #endif -->
 
@@ -130,13 +130,10 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 - Fixed MQTT Universal boolean variables not toggling reliably from programming.
 - Fixed MQTT Universal variables becoming read-only after a controller reboot or
   driver reload.
-
-<!-- #ifndef DRIVERCENTRAL -->
-
+  <!-- #ifndef DRIVERCENTRAL -->
 - Fixed automatic driver updates stopping when the MQTT driver that ran them was
   removed from the project.
-
-<!-- #endif -->
+  <!-- #endif -->
 
 ## v20260217 - 2026-02-17
 
