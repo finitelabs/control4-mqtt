@@ -2,19 +2,23 @@
 
 ## Overview
 
-The MQTT Broker driver connects Control4 to an MQTT broker (such as Mosquitto,
-HiveMQ, or other MQTT-compatible platforms). It manages the connection and
-provides pub/sub services to child drivers (switch, button, contact, etc.) that
-connect via the MQTT broker connection binding.
+The MQTT drivers bring MQTT devices and values into Control4. The MQTT Broker
+driver connects Control4 to any MQTT broker on your network, and the MQTT
+Universal driver turns MQTT topics into Control4 relays, contact sensors,
+buttons, events and variables, each with its own state and command topics.
 
 ## Features
 
 - Local network communication requiring no cloud services
-- Connects to any standard MQTT broker
-- Supports username/password authentication
-- Manages subscriptions for connected child drivers
-- Automatic reconnection on disconnect
-- Message caching for late-subscribing devices
+- Connects to any standard MQTT broker, with username and password sign-in
+- Relays and contact sensors with state feedback from MQTT topics
+- Buttons that publish to MQTT, and events that trigger keypad Button Links from
+  MQTT messages
+- Variables synced with MQTT, with temperature and humidity connections for
+  thermostats and sensors
+- Values read from nested JSON payloads
+- Device Available and Unavailable events from an availability topic
+- Automatic reconnection, with messages kept for devices that subscribe late
 
 ## System requirements
 
