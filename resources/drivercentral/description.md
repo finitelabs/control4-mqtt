@@ -5,7 +5,7 @@
 The MQTT drivers bring MQTT devices and values into Control4. The MQTT Broker
 driver connects Control4 to any MQTT broker on your network, and the MQTT
 Universal driver turns MQTT topics into Control4 relays, contact sensors,
-buttons, events and variables, each with its own state and command topics.
+buttons, events and variables, each on its own MQTT topics.
 
 ## Features
 
