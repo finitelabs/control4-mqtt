@@ -531,8 +531,7 @@ https://drivercentral.io/platforms/control4-drivers/utility/mqtt
 <!-- #ifdef DRIVERCENTRAL -->
 
 If you have any questions or issues integrating this driver with Control4 or
-MQTT, you can contact us at
-[driver-support@finitelabs.com](mailto:driver-support@finitelabs.com) or
+MQTT, you can contact us at [%%SUPPORT_EMAIL%%](mailto:__SUPPORT_EMAIL__) or
 call/text us at [%%SUPPORT_PHONE%%](tel:__SUPPORT_PHONE__).
 
 <!-- #else -->
