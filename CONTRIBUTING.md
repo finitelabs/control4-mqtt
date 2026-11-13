@@ -385,6 +385,10 @@ runs `fn` with `print` collected and returns `ok, err, output`, and
 - `F.dofileBuild(path, build)` runs a Lua file as the `"drivercentral"` or
   `"oss"` build compiles it, with its `#ifdef` blocks applied. A driver loaded
   raw runs every arm.
+- `F.virtualClock(opts)` runs `C4:SetTimer` and `C4:GetTime` on a virtual clock,
+  so a test plays minutes of timers at once and in a fixed order. Drive it with
+  `run(ms)` and `at(ms, fn)`, read `now()` and `errors` (what a timer or promise
+  callback threw), then `restore()`.
 
 ### Persisted values
 
@@ -507,9 +511,9 @@ security add-generic-password -s control4-driver-build -a NAME -w
 In CI, the Build workflow passes `make build` each build secret by name from the
 repository's GitHub Actions secrets (add each name under Settings > Secrets and
 variables > Actions), so `make build` and the tools it runs never see any other
-secret. The template passes its own: `SUPPORT_CODE_SECRET` with a DriverCentral
-build, and the four `INFLUXDB_*` with Cloud Monitoring. A driver's own go in the
-copier answer `extra_build_secrets`
+secret. The template passes its own: `SUPPORT_CODE_SECRET`, `SUPPORT_PHONE` and
+`SUPPORT_EMAIL` with a DriverCentral build, and the four `INFLUXDB_*` with Cloud
+Monitoring. A driver's own go in the copier answer `extra_build_secrets`
 (`uvx copier update --trust --data extra_build_secrets="NAME OTHER"`), and
 `make check` fails when `.env.default` and the workflow disagree. Each value is
 a single line.
@@ -524,7 +528,16 @@ encrypted (`encryption="2"` on its `<script>`, set in the build copy of
 `driver.xml`), and `make package` deletes the plain-text squished Lua in
 `dist/<build>/source`, so neither the `.c4z` nor a CI artifact carries the value
 in the clear. Only `build/` keeps it, and that is gitignored and never uploaded.
-Keep placeholders out of documentation: a PDF is not encrypted.
+Keep placeholders out of documentation, since a PDF is not encrypted. The two
+exceptions are the support contacts a DriverCentral build's docs give, which are
+meant to be read: the secret only keeps them out of the repository. Write the
+phone number as `[%%SUPPORT_PHONE%%](tel:__SUPPORT_PHONE__)` and the email
+address as `[%%SUPPORT_EMAIL%%](mailto:__SUPPORT_EMAIL__)`, each inside
+`#ifdef DRIVERCENTRAL`. The link takes the `__NAME__` form, since mdformat
+escapes a `%` in a link. Set `SUPPORT_PHONE` with dashes, `+1-NNN-NNN-NNNN`, so
+it also makes the `tel:` link. Only the docs and their PDFs give the contacts.
+The README comes from the OSS docs, which never show them, and the listing
+description, `resources/drivercentral/description.md`, gives neither.
 
 A DriverCentral build is packaged encrypted with or without a secret.
 `make package` then opens every package of an encrypted build and fails unless
