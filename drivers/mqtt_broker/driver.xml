@@ -26,6 +26,7 @@
       <description>NAME is STRING</description>
       <true_text>Connected</true_text>
       <false_text>Disconnected</false_text>
+      <sort_order>1</sort_order>
     </conditional>
   </conditionals>
   <events>
