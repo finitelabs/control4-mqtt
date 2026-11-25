@@ -173,7 +173,7 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 
 ### Changed
 
-- Updated the MQTT Broker and MQTT Universal documentation with their
+- Changed the MQTT Broker and MQTT Universal documentation to cover their
   programming, read-only properties and button link connections.
 
 ### Removed
@@ -200,4 +200,4 @@ Template for a new release entry (copy below the heading, fill in, uncomment):
 
 ### Added
 
-- Initial Release.
+- Added the MQTT Broker, MQTT Switch, MQTT Contact and MQTT Button drivers.
